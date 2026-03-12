@@ -35,6 +35,7 @@ model Repository {
   updatedAt      DateTime      @updatedAt
 
   attestations   Attestation[]
+  workflowRuns   WorkflowRun[]
 
   @@unique([owner, name])
   @@index([owner])
@@ -88,4 +89,34 @@ model Attestation {
   @@index([voucherGithubLogin])
   @@index([orgGithubLogin])
   @@index([expiresAt])
+}
+
+/// A record of each workflow run seen by the app (captured from webhook events).
+/// Only the most recent 500 runs per repository are retained.
+model WorkflowRun {
+  id           String    @id @default(cuid())
+  repositoryId String
+
+  /// GitHub's numeric run ID, stored as a String for SQLite compatibility.
+  runId        String    @unique
+  /// Relative workflow file path, e.g. ".github/workflows/ci.yml"
+  workflowPath String
+  headBranch   String?
+  headSha      String
+  /// Triggering event name: "push", "pull_request", "schedule", etc.
+  event        String
+  /// GitHub run status: "queued" | "in_progress" | "completed"
+  status       String
+  /// GitHub run conclusion (null while running): "success" | "failure" | "cancelled" | "skipped" | etc.
+  conclusion   String?
+  /// Link to this run on GitHub.
+  htmlUrl      String?
+
+  runStartedAt DateTime?
+  createdAt    DateTime  @default(now())
+
+  repository   Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  @@index([repositoryId])
+  @@index([createdAt])
 }

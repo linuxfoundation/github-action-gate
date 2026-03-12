@@ -414,6 +414,44 @@ export function createApiRouter(): Router {
     }
   });
 
+  // ── Recent workflow runs ────────────────────────────────────────────────────
+
+  /**
+   * GET /api/v1/runs/recent
+   * Returns the most recently seen workflow runs across all installed repos.
+   * Query params:
+   *   limit   — max results, 1–50 (default 10)
+   *   owner   — filter to a specific owner
+   *   repo    — filter to a specific repo name (requires owner)
+   */
+  router.get("/runs/recent", async (req: Request, res: Response) => {
+    try {
+      const q = req.query as Record<string, string>;
+      const limit = Math.min(
+        Math.max(1, parseInt(q.limit ?? "10", 10) || 10),
+        50
+      );
+
+      const repoFilter: { owner?: string; name?: string } = {};
+      if (q.owner) repoFilter.owner = q.owner;
+      if (q.repo)  repoFilter.name  = q.repo;
+
+      const runs = await prisma.workflowRun.findMany({
+        take: limit,
+        orderBy: { createdAt: "desc" },
+        where: Object.keys(repoFilter).length
+          ? { repository: repoFilter }
+          : undefined,
+        include: {
+          repository: { select: { owner: true, name: true } },
+        },
+      });
+      res.json({ runs });
+    } catch {
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   return router;
 }
 

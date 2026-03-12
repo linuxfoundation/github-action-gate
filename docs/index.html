@@ -66,6 +66,38 @@
         </div>
       </section>
 
+      <!-- ── Recent Workflow Runs ──────────────────────────────── -->
+      <section class="runs-section" aria-label="Recent workflow runs">
+        <div class="table-header">
+          <h2 class="table-title">Recent Workflow Runs</h2>
+          <span class="result-count" id="runs-count"></span>
+          <button id="btn-refresh-runs" class="btn btn-secondary btn-sm" title="Refresh">
+            ↺ Refresh
+          </button>
+        </div>
+        <p class="runs-hint">Browse recent runs and click <strong>Vouch</strong> to create an attestation for that workflow.</p>
+
+        <div id="runs-loading" class="loading-state" aria-live="polite">Loading…</div>
+        <div id="runs-error"  class="error-state"   hidden></div>
+
+        <div class="table-wrapper" id="runs-wrapper" hidden>
+          <table id="runs-table">
+            <thead>
+              <tr>
+                <th>Repository</th>
+                <th>Workflow</th>
+                <th>Branch</th>
+                <th>Trigger</th>
+                <th>Status</th>
+                <th>Started</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="runs-body"></tbody>
+          </table>
+        </div>
+      </section>
+
       <!-- ── Filters ────────────────────────────────────────────── -->
       <section class="filters" aria-label="Filters">
         <div class="filter-row">

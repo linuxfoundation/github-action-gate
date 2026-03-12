@@ -2,6 +2,7 @@ import { Context } from "probot";
 import { parseWorkflowJobs } from "../services/workflow-parser";
 import { checkGate, buildCheckOutput } from "../services/gate";
 import { ensureRepository } from "../services/attestation";
+import { prisma } from "../db/client";
 
 const CHECK_NAME = "Action Gate / Workflow";
 
@@ -26,7 +27,7 @@ export async function handleWorkflowRun(
     return;
   }
 
-  await ensureRepository(
+  const repository = await ensureRepository(
     owner,
     repo,
     context.payload.repository.id,
@@ -67,4 +68,44 @@ export async function handleWorkflowRun(
       summary: output.summary,
     },
   });
+
+  // ── Persist run record ────────────────────────────────────────────────────
+  await prisma.workflowRun.upsert({
+    where: { runId: String(run.id) },
+    create: {
+      repositoryId: repository.id,
+      runId:        String(run.id),
+      workflowPath: run.path,
+      headBranch:   run.head_branch ?? null,
+      headSha:      run.head_sha,
+      event:        run.event,
+      status:       run.status,
+      conclusion:   run.conclusion ?? null,
+      htmlUrl:      run.html_url ?? null,
+      runStartedAt: run.run_started_at ? new Date(run.run_started_at) : null,
+    },
+    update: {
+      status:     run.status,
+      conclusion: run.conclusion ?? null,
+    },
+  }).catch((err) => context.log.warn({ err }, "Failed to persist workflow run"));
+
+  // Prune runs older than the most recent 500 for this repo.
+  const oldest = await prisma.workflowRun.findMany({
+    where:   { repositoryId: repository.id },
+    orderBy: { createdAt: "desc" },
+    skip:    500,
+    take:    1,
+    select:  { createdAt: true },
+  });
+  if (oldest.length > 0) {
+    await prisma.workflowRun
+      .deleteMany({
+        where: {
+          repositoryId: repository.id,
+          createdAt: { lte: oldest[0].createdAt },
+        },
+      })
+      .catch(() => {});
+  }
 }

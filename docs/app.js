@@ -467,9 +467,116 @@ $("vouch-form").addEventListener("submit", async (e) => {
   }
 });
 
+// ── Recent Workflow Runs ───────────────────────────────────────────────────────
+
+function runConclusionBadge(status, conclusion) {
+  if (status !== "completed") {
+    return `<span class="badge badge-in-progress">In progress</span>`;
+  }
+  const map = {
+    success:   ["badge-success",   "Success"],
+    failure:   ["badge-failure",   "Failure"],
+    cancelled: ["badge-cancelled", "Cancelled"],
+    skipped:   ["badge-skipped",   "Skipped"],
+    timed_out: ["badge-failure",   "Timed out"],
+    action_required: ["badge-warning", "Action required"],
+  };
+  const [cls, label] = map[conclusion] ?? ["badge-cancelled", conclusion ?? "Unknown"];
+  return `<span class="badge ${cls}">${label}</span>`;
+}
+
+function timeAgo(iso) {
+  if (!iso) return "—";
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 1)   return "just now";
+  if (mins < 60)  return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
+function renderRunRow(run) {
+  const repo = run.repository
+    ? `<a href="https://github.com/${escapeHtml(run.repository.owner)}/${escapeHtml(run.repository.name)}" target="_blank" rel="noopener" class="mono">${escapeHtml(run.repository.owner)}/${escapeHtml(run.repository.name)}</a>`
+    : "—";
+  const workflowLink = run.htmlUrl
+    ? `<a href="${escapeHtml(run.htmlUrl)}" target="_blank" rel="noopener" class="mono">${escapeHtml(run.workflowPath)}</a>`
+    : `<span class="mono">${escapeHtml(run.workflowPath)}</span>`;
+  const branch = run.headBranch
+    ? `<span class="mono">${escapeHtml(run.headBranch)}</span>`
+    : '<span class="text-muted">—</span>';
+  const event   = `<span class="badge-event">${escapeHtml(run.event)}</span>`;
+  const status  = runConclusionBadge(run.status, run.conclusion);
+  const started = `<span title="${escapeHtml(run.runStartedAt ?? run.createdAt)}">${timeAgo(run.runStartedAt ?? run.createdAt)}</span>`;
+
+  const repoFull = run.repository
+    ? `${run.repository.owner}/${run.repository.name}`
+    : "";
+  const vouchBtn = repoFull
+    ? `<button class="btn btn-primary btn-sm btn-vouch-run"
+         data-repo="${escapeHtml(repoFull)}"
+         data-workflow="${escapeHtml(run.workflowPath)}"
+         title="Vouch for this workflow">Vouch</button>`
+    : "";
+
+  return `<tr>
+    <td>${repo}</td>
+    <td>${workflowLink}</td>
+    <td>${branch}</td>
+    <td>${event}</td>
+    <td>${status}</td>
+    <td>${started}</td>
+    <td style="text-align:right">${vouchBtn}</td>
+  </tr>`;
+}
+
+async function loadRecentRuns() {
+  $("runs-loading").hidden = false;
+  $("runs-wrapper").hidden = true;
+  $("runs-error").hidden   = true;
+
+  try {
+    const data = await apiFetch("/api/v1/runs/recent?limit=10");
+    const runs = data.runs ?? [];
+    $("runs-count").textContent = runs.length > 0 ? `${runs.length} most recent` : "";
+
+    if (runs.length === 0) {
+      $("runs-body").innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--color-muted);padding:24px;">No workflow runs recorded yet \u2014 runs will appear here after the app processes its first webhook.</td></tr>`;
+    } else {
+      $("runs-body").innerHTML = runs.map(renderRunRow).join("");
+    }
+
+    $("runs-loading").hidden = true;
+    $("runs-wrapper").hidden  = false;
+  } catch (err) {
+    $("runs-loading").hidden = true;
+    $("runs-error").textContent = `Failed to load runs: ${err.message}`;
+    $("runs-error").hidden = false;
+  }
+}
+
+// Vouch buttons inside the runs table — pre-fill and open the modal.
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".btn-vouch-run");
+  if (!btn) return;
+  const token = getAuthToken();
+  if (!token) {
+    alert("Please log in with GitHub before creating an attestation.");
+    return;
+  }
+  $("f-repo").value     = btn.dataset.repo     ?? "";
+  $("f-workflow").value = btn.dataset.workflow  ?? "";
+  openModal();
+});
+
+$("btn-refresh-runs").addEventListener("click", loadRecentRuns);
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 initSorting();
 loadSummary();
+loadRecentRuns();
 loadAttestations();
 initAuth();
