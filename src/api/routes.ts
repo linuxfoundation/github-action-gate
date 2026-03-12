@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import { Router, Request, Response } from "express";
 import { Octokit } from "@octokit/rest";
-import { AttestationTier, GateMode } from "@prisma/client";
+import { AttestationTier, GateMode } from "../types";
 import {
   createAttestation,
   listAttestations,

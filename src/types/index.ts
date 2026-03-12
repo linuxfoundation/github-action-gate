@@ -1,6 +1,14 @@
-import { AttestationTier, GateMode } from "@prisma/client";
+// SQLite doesn't support Prisma native enums; these are stored as plain TEXT.
+// Defining them locally keeps type safety throughout the codebase.
+export enum GateMode {
+  AUDIT = "AUDIT",
+  BLOCK = "BLOCK",
+}
 
-export { AttestationTier, GateMode };
+export enum AttestationTier {
+  USER = "USER",
+  ORGANIZATION = "ORGANIZATION",
+}
 
 // ─── Domain types ─────────────────────────────────────────────────────────────
 

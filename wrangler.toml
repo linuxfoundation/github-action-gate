@@ -1,0 +1,32 @@
+name = "github-action-gate"
+main = "dist/index.js"
+compatibility_date = "2024-11-01"
+
+# Enable the Node.js compatibility layer so that Node built-ins (crypto,
+# stream, etc.) work inside the Worker runtime.
+compatibility_flags = ["nodejs_compat"]
+
+# ── D1 Database ──────────────────────────────────────────────────────────────
+# 1. Create the database:   npm run d1:create
+# 2. Paste the resulting database_id below.
+# 3. Apply migrations:       npm run d1:migrate:local  (local)
+#                            npm run d1:migrate:remote (production)
+[[d1_databases]]
+binding      = "DB"           # accessed in Worker code as env.DB
+database_name = "action-gate"
+database_id  = ""             # TODO: paste ID from `wrangler d1 create action-gate`
+
+# ── Environment variables ────────────────────────────────────────────────────
+[vars]
+NODE_ENV = "production"
+PORT     = "3000"
+
+# Secrets — set with `wrangler secret put <NAME>` (never commit values here):
+#   APP_ID
+#   PRIVATE_KEY
+#   WEBHOOK_SECRET
+#   GITHUB_CLIENT_ID
+#   GITHUB_CLIENT_SECRET
+#   API_BASE_URL
+#   DASHBOARD_URL
+#   CORS_ORIGINS

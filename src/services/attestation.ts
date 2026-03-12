@@ -1,4 +1,5 @@
-import { Attestation, AttestationTier, GateMode, Prisma } from "@prisma/client";
+import { Attestation, Prisma } from "@prisma/client";
+import { AttestationTier, GateMode } from "../types";
 import { prisma } from "../db/client";
 
 // ─── Repository ───────────────────────────────────────────────────────────────

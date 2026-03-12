@@ -10,6 +10,10 @@ dist/
 # Prisma generated client (reproduced by `prisma generate`)
 node_modules/.prisma/
 
+# SQLite local dev database
+prisma/dev.db
+prisma/dev.db-journal
+
 # Logs
 *.log
 npm-debug.log*

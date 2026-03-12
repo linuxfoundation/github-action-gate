@@ -1,6 +1,7 @@
-import { GateMode } from "@prisma/client";
+import { GateMode } from "../types";
 import { checkAttestationStatus, getRepository } from "./attestation";
 import {
+  AttestationTier,
   CheckOutput,
   GateCheckResult,
   GateSummary,
@@ -51,7 +52,7 @@ export async function checkGate(
         attestationId: a.id,
         voucherGithubLogin: a.voucherGithubLogin,
         voucherOrgAffiliation: a.voucherOrgAffiliation,
-        tier: a.tier,
+        tier: a.tier as AttestationTier,
         orgGithubLogin: a.orgGithubLogin,
         notes: a.notes,
         expiresAt: a.expiresAt,
@@ -70,7 +71,7 @@ export async function checkGate(
         attestationId: a.id,
         voucherGithubLogin: a.voucherGithubLogin,
         voucherOrgAffiliation: a.voucherOrgAffiliation,
-        tier: a.tier,
+        tier: a.tier as AttestationTier,
         orgGithubLogin: a.orgGithubLogin,
         notes: a.notes,
         expiresAt: a.expiresAt,
@@ -106,7 +107,7 @@ export async function checkGate(
             attestationId: a.id,
             voucherGithubLogin: a.voucherGithubLogin,
             voucherOrgAffiliation: a.voucherOrgAffiliation,
-            tier: a.tier,
+            tier: a.tier as AttestationTier,
             orgGithubLogin: a.orgGithubLogin,
             notes: a.notes,
             expiresAt: a.expiresAt,
@@ -121,7 +122,7 @@ export async function checkGate(
             attestationId: a.id,
             voucherGithubLogin: a.voucherGithubLogin,
             voucherOrgAffiliation: a.voucherOrgAffiliation,
-            tier: a.tier,
+            tier: a.tier as AttestationTier,
             orgGithubLogin: a.orgGithubLogin,
             notes: a.notes,
             expiresAt: a.expiresAt,
@@ -138,7 +139,7 @@ export async function checkGate(
     }
   }
 
-  return buildSummary(owner, repo, repository.mode, checks);
+  return buildSummary(owner, repo, repository.mode as GateMode, checks);
 }
 
 function buildSummary(

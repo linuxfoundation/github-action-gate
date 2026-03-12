@@ -2,28 +2,13 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
-}
-
-// ─── Enums ───────────────────────────────────────────────────────────────────
-
-enum GateMode {
-  /// Allow workflows/jobs to run but annotate the check with a warning.
-  AUDIT
-  /// Fail the check run and block the merge / run (requires branch protection).
-  BLOCK
-}
-
-enum AttestationTier {
-  /// An individual GitHub user is vouching (with an optional org affiliation).
-  USER
-  /// A GitHub organization is vouching (membership is verified at vouch time).
-  ORGANIZATION
 }
 
 // ─── Models ──────────────────────────────────────────────────────────────────
@@ -41,7 +26,8 @@ model Repository {
   // ── Gate configuration ──────────────────────────────────────────────────
   /// Whether to block or only warn when a workflow/job is unattested.
   /// Default is AUDIT (warn only). Set DEFAULT_GATE_MODE=block in .env to default to BLOCK.
-  mode           GateMode      @default(AUDIT)
+  /// Stored as TEXT: "AUDIT" | "BLOCK"
+  mode           String        @default("AUDIT")
   /// How many days an attestation is valid before it must be re-verified.
   expiryDays     Int           @default(180)
 
@@ -76,7 +62,8 @@ model Attestation {
   voucherOrgAffiliation String?
 
   // ── Tier ────────────────────────────────────────────────────────────────
-  tier           AttestationTier
+  /// Stored as TEXT: "USER" | "ORGANIZATION"
+  tier           String
   /// For ORGANIZATION tier: the GitHub org whose membership was verified.
   orgGithubLogin String?
 
