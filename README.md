@@ -30,7 +30,8 @@ GitHub Actions workflows execute arbitrary code with repository secrets. In larg
 ## Stack
 
 - **Runtime**: [Probot](https://probot.github.io/) v13 (TypeScript)
-- **Database**: PostgreSQL via [Prisma](https://www.prisma.io/) v5
+- **Database**: SQLite (local dev) via [Prisma](https://www.prisma.io/) v5 / [Cloudflare D1](https://developers.cloudflare.com/d1/) (production)
+- **Deployment**: [Cloudflare Workers](https://workers.cloudflare.com/) with Node.js compatibility
 - **API**: Express REST API mounted on the Probot router
 - **Dashboard**: Static GitHub Pages site (`docs/`) with GitHub OAuth login
 
@@ -41,8 +42,8 @@ GitHub Actions workflows execute arbitrary code with repository secrets. In larg
 ### 1. Prerequisites
 
 - Node.js ≥ 20
-- Docker (for local Postgres) or an existing PostgreSQL instance
 - A GitHub App ([create one](https://github.com/settings/apps/new))
+- (Production) A [Cloudflare account](https://dash.cloudflare.com/sign-up) with Workers and D1 enabled
 
 ### 2. Install dependencies
 
@@ -55,7 +56,7 @@ npx prisma generate
 
 ```bash
 cp .env.example .env
-# Edit .env with your GitHub App credentials, DATABASE_URL, and OAuth client
+# Edit .env with your GitHub App credentials and OAuth client
 ```
 
 Required env vars:
@@ -65,22 +66,18 @@ Required env vars:
 | `APP_ID` | GitHub App ID |
 | `PRIVATE_KEY` | GitHub App private key (PEM, newlines as `\n`) |
 | `WEBHOOK_SECRET` | Webhook secret set in GitHub App settings |
-| `DATABASE_URL` | PostgreSQL connection string |
+| `DATABASE_URL` | SQLite path for local dev — `file:./prisma/dev.db` |
 | `GITHUB_CLIENT_ID` | OAuth App client ID (for dashboard login) |
 | `GITHUB_CLIENT_SECRET` | OAuth App client secret |
 | `API_BASE_URL` | Public URL of this server (e.g. `https://action-gate.example.com`) |
 | `DASHBOARD_URL` | Public URL of the dashboard (e.g. `https://your-org.github.io/github-action-gate`) |
 
-### 4. Start Postgres and run migrations
+### 4. Run locally
 
 ```bash
-docker compose up -d
-npm run prisma:migrate
-```
+# Create the local SQLite database and apply the schema
+npx prisma migrate dev
 
-### 5. Run locally
-
-```bash
 # Tunnel webhooks with smee (https://smee.io)
 npx smee-client --url https://smee.io/<your-channel> --target http://localhost:3000/api/github/hooks &
 
@@ -88,6 +85,48 @@ npm run dev
 ```
 
 The dashboard is served at `http://localhost:3000/dashboard` in development mode.
+
+---
+
+## Deploying to Cloudflare Workers
+
+Action Gate runs on Cloudflare Workers with Node.js compatibility and uses Cloudflare D1 as its production database.
+
+### 1. Create the D1 database
+
+```bash
+npm run d1:create
+# Copy the database_id from the output into wrangler.toml
+```
+
+### 2. Apply migrations to D1
+
+```bash
+# Local D1 environment
+npm run d1:migrate:local
+
+# Remote (production) D1
+npm run d1:migrate:remote
+```
+
+### 3. Set secrets
+
+```bash
+wrangler secret put APP_ID
+wrangler secret put PRIVATE_KEY
+wrangler secret put WEBHOOK_SECRET
+wrangler secret put GITHUB_CLIENT_ID
+wrangler secret put GITHUB_CLIENT_SECRET
+wrangler secret put API_BASE_URL
+wrangler secret put DASHBOARD_URL
+```
+
+### 4. Deploy
+
+```bash
+npm run build
+wrangler deploy
+```
 
 ---
 
@@ -175,7 +214,10 @@ Users can log in with their GitHub account via the **Login with GitHub** button 
 npm run build          # compile TypeScript
 npm run dev            # tsc + start probot
 npm run type-check     # type-check without emitting
-npm run prisma:studio  # open Prisma Studio
+npm run prisma:studio  # open Prisma Studio (local SQLite)
+npm run d1:create      # create Cloudflare D1 database
+npm run d1:migrate:local   # apply migrations to local D1 environment
+npm run d1:migrate:remote  # apply migrations to production D1
 ```
 
 ---
