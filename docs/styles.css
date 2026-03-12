@@ -153,6 +153,16 @@ pre code { background: none; border: none; padding: 0; }
 
 .btn-sm { padding: 3px 10px; font-size: 0.78rem; }
 .field-hint { display: block; font-size: 0.75rem; color: var(--color-muted); margin-top: 4px; font-style: italic; }
+.field-hint-error { color: var(--color-warning); font-style: normal; }
+.btn-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--color-primary);
+  cursor: pointer;
+  font-size: inherit;
+  text-decoration: underline;
+}
 
 /* ─── Recent runs section ───────────────────────────────────────────────── */
 .runs-section { margin-bottom: 28px; }

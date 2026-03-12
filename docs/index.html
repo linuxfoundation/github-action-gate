@@ -345,10 +345,14 @@
                 >GitHub org <span class="required">*</span></label
               >
               <select id="f-org-select">
-                <option value="">Select an organization…</option>
-                <option value="__other__">Other (enter manually)…</option>
+                <option value="">Loading your organizations…</option>
               </select>
-              <span id="orgs-loading-hint" class="field-hint" hidden>Loading your organizations…</span>
+              <span id="orgs-loading-hint" class="field-hint" hidden>Fetching your organizations…</span>
+              <span id="orgs-error-hint" class="field-hint field-hint-error" hidden>
+                Couldn’t load your organizations.
+                <button type="button" id="btn-retry-orgs" class="btn-link">Retry</button>
+                &mdash; or choose <em>Other</em> below to enter manually.
+              </span>
             </div>
           </div>
 

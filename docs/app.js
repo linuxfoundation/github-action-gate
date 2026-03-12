@@ -337,6 +337,7 @@ function showLoggedOut() {
   $("user-info").hidden = true;
   $("btn-vouch").hidden = true;
   cachedOrgs = [];
+  $('orgs-error-hint').hidden = true;
   populateOrgSelect();
 }
 
@@ -346,23 +347,52 @@ let cachedOrgs = [];
 
 async function loadUserOrgs(token) {
   if (!token) return;
-  $("orgs-loading-hint").hidden = false;
+  $('orgs-loading-hint').hidden = false;
+  $('orgs-error-hint').hidden   = true;
   try {
-    const res = await fetch("https://api.github.com/user/orgs?per_page=100", {
+    const res = await fetch('https://api.github.com/user/orgs?per_page=100', {
       headers: {
         Authorization: `Bearer ${token}`,
-        Accept: "application/vnd.github+json",
-        "X-GitHub-Api-Version": "2022-11-28",
+        Accept: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
       },
     });
-    if (!res.ok) return;
-    cachedOrgs = await res.json();
-    populateOrgSelect();
-  } catch {
-    // Non-fatal — user can still type an org manually via the Other option.
+    const scopes = res.headers.get('X-OAuth-Scopes') ?? '(none)';
+    console.debug('[ActionGate] /user/orgs status:', res.status, '| OAuth scopes:', scopes);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      console.warn('[ActionGate] /user/orgs error:', body);
+      showOrgLoadError();
+      return;
+    }
+    const orgs = await res.json();
+    console.debug('[ActionGate] orgs received:', orgs.map((o) => o.login));
+    cachedOrgs = orgs;
+    if (cachedOrgs.length === 0) {
+      console.warn('[ActionGate] No orgs returned. Token may lack read:org scope or require SAML SSO authorization.');
+      showOrgLoadError('No organizations found for your account. Your token may need read:org scope or SAML SSO re-authorization.');
+    } else {
+      populateOrgSelect();
+    }
+  } catch (err) {
+    console.warn('[ActionGate] Failed to fetch orgs:', err);
+    showOrgLoadError();
   } finally {
-    $("orgs-loading-hint").hidden = true;
+    $('orgs-loading-hint').hidden = true;
   }
+}
+
+function showOrgLoadError(msg) {
+  const hint = $('orgs-error-hint');
+  if (msg) {
+    // Replace only the text node before the Retry button, preserving the button.
+    hint.firstChild.textContent = msg + ' ';
+  }
+  hint.hidden = false;
+  // Fall back to manual input automatically.
+  populateOrgSelect();
+  $('f-org-select').value = '__other__';
+  $('org-login-custom-row').hidden = false;
 }
 
 function populateOrgSelect() {
@@ -430,7 +460,18 @@ $("f-tier").addEventListener("change", () => {
   if (isOrg) $("f-org-select").focus();
 });
 
-$("f-org-select").addEventListener("change", () => {
+document.addEventListener('DOMContentLoaded', () => {
+  const retryBtn = $('btn-retry-orgs');
+  if (retryBtn) {
+    retryBtn.addEventListener('click', () => {
+      $('orgs-error-hint').hidden = true;
+      $('org-login-custom-row').hidden = true;
+      loadUserOrgs(getAuthToken());
+    });
+  }
+});
+
+$('f-org-select').addEventListener('change', () => {
   const isOther = $("f-org-select").value === "__other__";
   $("org-login-custom-row").hidden = !isOther;
   if (isOther) $("f-org-login").focus();
