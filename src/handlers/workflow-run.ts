@@ -15,9 +15,7 @@ const CHECK_NAME = "Action Gate / Workflow";
  * To actually block execution, configure this check run's name as a required
  * status check on the relevant branch protection rule.
  */
-export async function handleWorkflowRun(
-  context: Context<"workflow_run.requested">
-) {
+export async function handleWorkflowRun(context: Context<"workflow_run.requested">) {
   const { owner, repo } = context.repo();
   const run = context.payload.workflow_run;
   const installationId = context.payload.installation?.id;
@@ -70,33 +68,35 @@ export async function handleWorkflowRun(
   });
 
   // ── Persist run record ────────────────────────────────────────────────────
-  await prisma.workflowRun.upsert({
-    where: { runId: String(run.id) },
-    create: {
-      repositoryId: repository.id,
-      runId:        String(run.id),
-      workflowPath: run.path,
-      headBranch:   run.head_branch ?? null,
-      headSha:      run.head_sha,
-      event:        run.event,
-      status:       run.status,
-      conclusion:   run.conclusion ?? null,
-      htmlUrl:      run.html_url ?? null,
-      runStartedAt: run.run_started_at ? new Date(run.run_started_at) : null,
-    },
-    update: {
-      status:     run.status,
-      conclusion: run.conclusion ?? null,
-    },
-  }).catch((err) => context.log.warn({ err }, "Failed to persist workflow run"));
+  await prisma.workflowRun
+    .upsert({
+      where: { runId: String(run.id) },
+      create: {
+        repositoryId: repository.id,
+        runId: String(run.id),
+        workflowPath: run.path,
+        headBranch: run.head_branch ?? null,
+        headSha: run.head_sha,
+        event: run.event,
+        status: run.status,
+        conclusion: run.conclusion ?? null,
+        htmlUrl: run.html_url ?? null,
+        runStartedAt: run.run_started_at ? new Date(run.run_started_at) : null,
+      },
+      update: {
+        status: run.status,
+        conclusion: run.conclusion ?? null,
+      },
+    })
+    .catch((err) => context.log.warn({ err }, "Failed to persist workflow run"));
 
   // Prune runs older than the most recent 500 for this repo.
   const oldest = await prisma.workflowRun.findMany({
-    where:   { repositoryId: repository.id },
+    where: { repositoryId: repository.id },
     orderBy: { createdAt: "desc" },
-    skip:    500,
-    take:    1,
-    select:  { createdAt: true },
+    skip: 500,
+    take: 1,
+    select: { createdAt: true },
   });
   if (oldest.length > 0) {
     await prisma.workflowRun

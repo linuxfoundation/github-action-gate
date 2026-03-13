@@ -1,12 +1,6 @@
 import { GateMode } from "../types";
 import { checkAttestationStatus, getRepository } from "./attestation";
-import {
-  AttestationTier,
-  CheckOutput,
-  GateCheckResult,
-  GateSummary,
-  WorkflowRef,
-} from "../types";
+import { AttestationTier, CheckOutput, GateCheckResult, GateSummary, WorkflowRef } from "../types";
 
 // ─── Core gate logic ─────────────────────────────────────────────────────────
 
@@ -37,11 +31,7 @@ export async function checkGate(
 
   for (const workflow of workflows) {
     // Check for a workflow-level attestation first (covers all jobs).
-    const wfResult = await checkAttestationStatus(
-      repository.id,
-      workflow.path,
-      null
-    );
+    const wfResult = await checkAttestationStatus(repository.id, workflow.path, null);
 
     if (wfResult.status === "active") {
       const a = wfResult.attestation;
@@ -92,11 +82,7 @@ export async function checkGate(
       }
     } else {
       for (const jobName of workflow.jobs) {
-        const jobResult = await checkAttestationStatus(
-          repository.id,
-          workflow.path,
-          jobName
-        );
+        const jobResult = await checkAttestationStatus(repository.id, workflow.path, jobName);
 
         if (jobResult.status === "active") {
           const a = jobResult.attestation;
@@ -171,7 +157,9 @@ function buildSummary(
  */
 function escapeMdCell(s: string | null | undefined): string {
   if (s == null) return "—";
-  return String(s).replace(/[|`\\]/g, (ch) => `\\${ch}`).replace(/[\r\n]/g, " ");
+  return String(s)
+    .replace(/[|`\\]/g, (ch) => `\\${ch}`)
+    .replace(/[\r\n]/g, " ");
 }
 
 /**
@@ -217,9 +205,7 @@ export function buildCheckOutput(summary: GateSummary): CheckOutput {
         `To vouch for these, visit the **[Action Gate Dashboard](${dashboardUrl})** or use the [REST API](${process.env.API_BASE_URL ?? ""}/api/v1/attestations).`
       );
     } else {
-      lines.push(
-        "To vouch, create an attestation via the Action Gate REST API."
-      );
+      lines.push("To vouch, create an attestation via the Action Gate REST API.");
     }
     lines.push("");
   }
@@ -235,9 +221,7 @@ export function buildCheckOutput(summary: GateSummary): CheckOutput {
         ? `@${escapeMdCell(c.orgGithubLogin)} (org)`
         : `@${escapeMdCell(c.voucherGithubLogin) || "?"}`;
       const affil = escapeMdCell(c.voucherOrgAffiliation);
-      const exp = c.expiresAt
-        ? c.expiresAt.toISOString().split("T")[0]
-        : "—";
+      const exp = c.expiresAt ? c.expiresAt.toISOString().split("T")[0] : "—";
       lines.push(
         `| \`${escapeMdCell(c.workflowPath)}\` | ${job} | ${voucher} | ${affil} | ${exp} |`
       );

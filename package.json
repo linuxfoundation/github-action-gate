@@ -16,6 +16,10 @@
     "d1:migrate:local": "wrangler d1 migrations apply action-gate --local",
     "d1:migrate:remote": "wrangler d1 migrations apply action-gate",
     "type-check": "tsc --noEmit",
+    "lint": "eslint 'src/**/*.ts'",
+    "lint:fix": "eslint 'src/**/*.ts' --fix",
+    "format": "prettier --write 'src/**/*.ts' 'docs/app.js'",
+    "format:check": "prettier --check 'src/**/*.ts' 'docs/app.js'",
     "test": "jest --passWithNoTests"
   },
   "dependencies": {
@@ -35,12 +39,16 @@
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^22.10.0",
     "@types/supertest": "^7.2.0",
+    "eslint": "^10.0.3",
+    "eslint-config-prettier": "^10.1.8",
     "jest": "^30.3.0",
+    "prettier": "^3.8.1",
     "prisma": "^5.22.0",
     "supertest": "^7.2.2",
     "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.2",
+    "typescript-eslint": "^8.57.0",
     "wrangler": "^3.98.0"
   },
   "engines": {

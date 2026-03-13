@@ -86,11 +86,7 @@ export function createApiRouter(): Router {
    */
   router.post(
     "/attestations",
-    authenticateUser as unknown as (
-      req: Request,
-      res: Response,
-      next: () => void
-    ) => void,
+    authenticateUser as unknown as (req: Request, res: Response, next: () => void) => void,
     async (req: AuthRequest, res: Response) => {
       try {
         const {
@@ -105,9 +101,7 @@ export function createApiRouter(): Router {
         } = req.body as Record<string, unknown>;
 
         if (typeof repository !== "string" || typeof workflow_path !== "string") {
-          res
-            .status(400)
-            .json({ error: "repository (owner/repo) and workflow_path are required" });
+          res.status(400).json({ error: "repository (owner/repo) and workflow_path are required" });
           return;
         }
 
@@ -121,9 +115,7 @@ export function createApiRouter(): Router {
 
         const [repoOwner, repoName] = repository.split("/");
         if (!repoOwner || !repoName) {
-          res
-            .status(400)
-            .json({ error: 'repository must be in "owner/repo" format' });
+          res.status(400).json({ error: 'repository must be in "owner/repo" format' });
           return;
         }
 
@@ -147,17 +139,14 @@ export function createApiRouter(): Router {
         }
 
         const attestationTier =
-          tier === "organization"
-            ? AttestationTier.ORGANIZATION
-            : AttestationTier.USER;
+          tier === "organization" ? AttestationTier.ORGANIZATION : AttestationTier.USER;
 
         if (
           attestationTier === AttestationTier.ORGANIZATION &&
           typeof org_github_login !== "string"
         ) {
           res.status(400).json({
-            error:
-              "org_github_login is required for organization-tier attestations",
+            error: "org_github_login is required for organization-tier attestations",
           });
           return;
         }
@@ -182,9 +171,7 @@ export function createApiRouter(): Router {
         }
 
         const expiryDays =
-          typeof expiry_days === "number" && expiry_days > 0
-            ? expiry_days
-            : repoRecord.expiryDays;
+          typeof expiry_days === "number" && expiry_days > 0 ? expiry_days : repoRecord.expiryDays;
 
         // Reject if an active attestation already exists for this exact target.
         const jobArg = typeof job_name === "string" ? job_name : null;
@@ -210,11 +197,9 @@ export function createApiRouter(): Router {
           jobName: typeof job_name === "string" ? job_name : null,
           voucherGithubLogin: req.user!.login,
           voucherGithubId: req.user!.id,
-          voucherOrgAffiliation:
-            typeof org_affiliation === "string" ? org_affiliation : null,
+          voucherOrgAffiliation: typeof org_affiliation === "string" ? org_affiliation : null,
           tier: attestationTier,
-          orgGithubLogin:
-            typeof org_github_login === "string" ? org_github_login : null,
+          orgGithubLogin: typeof org_github_login === "string" ? org_github_login : null,
           notes: typeof notes === "string" ? notes : null,
           expiryDays,
         });
@@ -240,11 +225,7 @@ export function createApiRouter(): Router {
    */
   router.post(
     "/attestations/batch",
-    authenticateUser as unknown as (
-      req: Request,
-      res: Response,
-      next: () => void
-    ) => void,
+    authenticateUser as unknown as (req: Request, res: Response, next: () => void) => void,
     async (req: AuthRequest, res: Response) => {
       try {
         const body = req.body as Record<string, unknown>;
@@ -336,9 +317,7 @@ export function createApiRouter(): Router {
             continue;
           }
           const attestationTier =
-            tier === "organization"
-              ? AttestationTier.ORGANIZATION
-              : AttestationTier.USER;
+            tier === "organization" ? AttestationTier.ORGANIZATION : AttestationTier.USER;
           if (
             attestationTier === AttestationTier.ORGANIZATION &&
             typeof org_github_login !== "string"
@@ -363,9 +342,7 @@ export function createApiRouter(): Router {
             org_affiliation: typeof org_affiliation === "string" ? org_affiliation : null,
             notes: typeof notes === "string" ? notes : null,
             expiry_days:
-              typeof expiry_days === "number" && expiry_days > 0
-                ? expiry_days
-                : undefined,
+              typeof expiry_days === "number" && expiry_days > 0 ? expiry_days : undefined,
           });
         }
 
@@ -373,9 +350,7 @@ export function createApiRouter(): Router {
         const orgLoginSet = new Set(
           validItems
             .filter(
-              (it) =>
-                it.attestationTier === AttestationTier.ORGANIZATION &&
-                it.org_github_login
+              (it) => it.attestationTier === AttestationTier.ORGANIZATION && it.org_github_login
             )
             .map((it) => it.org_github_login as string)
         );
@@ -398,13 +373,8 @@ export function createApiRouter(): Router {
         }
 
         // ── Deduplicated repository lookups ────────────────────────────────
-        const repoKeySet = new Set(
-          validItems.map((it) => `${it.repoOwner}/${it.repoName}`)
-        );
-        const repoCache = new Map<
-          string,
-          { id: string; expiryDays: number } | null
-        >();
+        const repoKeySet = new Set(validItems.map((it) => `${it.repoOwner}/${it.repoName}`));
+        const repoCache = new Map<string, { id: string; expiryDays: number } | null>();
         await Promise.all(
           [...repoKeySet].map(async (key) => {
             const [o, n] = key.split("/");
@@ -414,10 +384,7 @@ export function createApiRouter(): Router {
 
         // ── Per-item create ─────────────────────────────────────────────────
         for (const it of validItems) {
-          if (
-            it.attestationTier === AttestationTier.ORGANIZATION &&
-            it.org_github_login
-          ) {
+          if (it.attestationTier === AttestationTier.ORGANIZATION && it.org_github_login) {
             if (!orgMembershipOk.get(it.org_github_login)) {
               results.push({
                 index: it.index,
@@ -433,7 +400,8 @@ export function createApiRouter(): Router {
             results.push({
               index: it.index,
               status: "error",
-              reason: "Repository not found. Install the Action Gate GitHub App on this repository first.",
+              reason:
+                "Repository not found. Install the Action Gate GitHub App on this repository first.",
             });
             continue;
           }
@@ -473,11 +441,10 @@ export function createApiRouter(): Router {
 
         const created = results.filter((r) => r.status === "created").length;
         const skipped = results.filter((r) => r.status === "skipped").length;
-        const errors  = results.filter((r) => r.status === "error").length;
+        const errors = results.filter((r) => r.status === "error").length;
         results.sort((a, b) => a.index - b.index);
 
-        const httpStatus =
-          created > 0 && skipped === 0 && errors === 0 ? 201 : 207;
+        const httpStatus = created > 0 && skipped === 0 && errors === 0 ? 201 : 207;
         res.status(httpStatus).json({ results, summary: { created, skipped, errors } });
       } catch (err) {
         console.error("[action-gate] POST /attestations/batch error:", err);
@@ -492,11 +459,7 @@ export function createApiRouter(): Router {
    */
   router.delete(
     "/attestations/:id",
-    authenticateUser as unknown as (
-      req: Request,
-      res: Response,
-      next: () => void
-    ) => void,
+    authenticateUser as unknown as (req: Request, res: Response, next: () => void) => void,
     async (req: AuthRequest, res: Response) => {
       try {
         const attestation = await prisma.attestation.findUnique({
@@ -515,12 +478,11 @@ export function createApiRouter(): Router {
         if (!isOwner) {
           try {
             const userOctokit = new Octokit({ auth: req.token });
-            const { data: perm } =
-              await userOctokit.repos.getCollaboratorPermissionLevel({
-                owner: attestation.repository.owner,
-                repo: attestation.repository.name,
-                username: req.user!.login,
-              });
+            const { data: perm } = await userOctokit.repos.getCollaboratorPermissionLevel({
+              owner: attestation.repository.owner,
+              repo: attestation.repository.name,
+              username: req.user!.login,
+            });
             isAdmin = ["admin", "maintain"].includes(perm.permission);
           } catch {
             // Could not verify — deny.
@@ -529,16 +491,12 @@ export function createApiRouter(): Router {
 
         if (!isOwner && !isAdmin) {
           res.status(403).json({
-            error:
-              "Only the original voucher or a repository admin can revoke this attestation",
+            error: "Only the original voucher or a repository admin can revoke this attestation",
           });
           return;
         }
 
-        const revoked = await revokeAttestation(
-          req.params.id,
-          req.user!.login
-        );
+        const revoked = await revokeAttestation(req.params.id, req.user!.login);
         res.json(revoked);
       } catch (err) {
         console.error("[action-gate] DELETE /attestations/:id error:", err);
@@ -583,35 +541,32 @@ export function createApiRouter(): Router {
   });
 
   /** GET /api/v1/repositories/:owner/:repo */
-  router.get(
-    "/repositories/:owner/:repo",
-    async (req: Request, res: Response) => {
-      try {
-        const repo = await prisma.repository.findUnique({
-          where: {
-            owner_name: { owner: req.params.owner, name: req.params.repo },
-          },
-          include: {
-            _count: {
-              select: {
-                attestations: {
-                  where: { revokedAt: null, expiresAt: { gt: new Date() } },
-                },
+  router.get("/repositories/:owner/:repo", async (req: Request, res: Response) => {
+    try {
+      const repo = await prisma.repository.findUnique({
+        where: {
+          owner_name: { owner: req.params.owner, name: req.params.repo },
+        },
+        include: {
+          _count: {
+            select: {
+              attestations: {
+                where: { revokedAt: null, expiresAt: { gt: new Date() } },
               },
             },
           },
-        });
-        if (!repo) {
-          res.status(404).json({ error: "Repository not found" });
-          return;
-        }
-        res.json(repo);
-      } catch (err) {
-        console.error("[action-gate] GET /repositories/:owner/:repo error:", err);
-        res.status(500).json({ error: "Internal server error" });
+        },
+      });
+      if (!repo) {
+        res.status(404).json({ error: "Repository not found" });
+        return;
       }
+      res.json(repo);
+    } catch (err) {
+      console.error("[action-gate] GET /repositories/:owner/:repo error:", err);
+      res.status(500).json({ error: "Internal server error" });
     }
-  );
+  });
 
   /**
    * PUT /api/v1/repositories/:owner/:repo/config
@@ -620,11 +575,7 @@ export function createApiRouter(): Router {
    */
   router.put(
     "/repositories/:owner/:repo/config",
-    authenticateUser as unknown as (
-      req: Request,
-      res: Response,
-      next: () => void
-    ) => void,
+    authenticateUser as unknown as (req: Request, res: Response, next: () => void) => void,
     async (req: AuthRequest, res: Response) => {
       try {
         const { owner, repo } = req.params;
@@ -633,16 +584,13 @@ export function createApiRouter(): Router {
         // Verify requester holds admin permission on the repo.
         try {
           const userOctokit = new Octokit({ auth: req.token });
-          const { data: perm } =
-            await userOctokit.repos.getCollaboratorPermissionLevel({
-              owner,
-              repo,
-              username: req.user!.login,
-            });
+          const { data: perm } = await userOctokit.repos.getCollaboratorPermissionLevel({
+            owner,
+            repo,
+            username: req.user!.login,
+          });
           if (perm.permission !== "admin") {
-            res
-              .status(403)
-              .json({ error: "Repository admin permission is required" });
+            res.status(403).json({ error: "Repository admin permission is required" });
             return;
           }
         } catch {
@@ -678,24 +626,21 @@ export function createApiRouter(): Router {
   router.get("/summary", async (_req: Request, res: Response) => {
     try {
       const now = new Date();
-      const thirtyDaysLater = new Date(
-        now.getTime() + 30 * 24 * 60 * 60 * 1_000
-      );
+      const thirtyDaysLater = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1_000);
 
-      const [totalRepos, totalAttestations, activeAttestations, expiringSoon] =
-        await Promise.all([
-          prisma.repository.count(),
-          prisma.attestation.count(),
-          prisma.attestation.count({
-            where: { revokedAt: null, expiresAt: { gt: now } },
-          }),
-          prisma.attestation.count({
-            where: {
-              revokedAt: null,
-              expiresAt: { gt: now, lte: thirtyDaysLater },
-            },
-          }),
-        ]);
+      const [totalRepos, totalAttestations, activeAttestations, expiringSoon] = await Promise.all([
+        prisma.repository.count(),
+        prisma.attestation.count(),
+        prisma.attestation.count({
+          where: { revokedAt: null, expiresAt: { gt: now } },
+        }),
+        prisma.attestation.count({
+          where: {
+            revokedAt: null,
+            expiresAt: { gt: now, lte: thirtyDaysLater },
+          },
+        }),
+      ]);
 
       res.json({
         totalRepos,
@@ -722,21 +667,16 @@ export function createApiRouter(): Router {
   router.get("/runs/recent", async (req: Request, res: Response) => {
     try {
       const q = req.query as Record<string, string>;
-      const limit = Math.min(
-        Math.max(1, parseInt(q.limit ?? "10", 10) || 10),
-        50
-      );
+      const limit = Math.min(Math.max(1, parseInt(q.limit ?? "10", 10) || 10), 50);
 
       const repoFilter: { owner?: string; name?: string } = {};
       if (q.owner) repoFilter.owner = q.owner;
-      if (q.repo)  repoFilter.name  = q.repo;
+      if (q.repo) repoFilter.name = q.repo;
 
       const runs = await prisma.workflowRun.findMany({
         take: limit,
         orderBy: { createdAt: "desc" },
-        where: Object.keys(repoFilter).length
-          ? { repository: repoFilter }
-          : undefined,
+        where: Object.keys(repoFilter).length ? { repository: repoFilter } : undefined,
         include: {
           repository: { select: { owner: true, name: true } },
         },
@@ -745,17 +685,17 @@ export function createApiRouter(): Router {
       // Determine which workflow paths already have an active attestation
       // so the dashboard can hide the Vouch button / filter the row.
       const now = new Date();
-      const uniqueTargets = [...new Set(
-        runs
-          .filter((r) => r.repositoryId)
-          .map((r) => `${r.repositoryId}::${r.workflowPath}`)
-      )];
+      const uniqueTargets = [
+        ...new Set(
+          runs.filter((r) => r.repositoryId).map((r) => `${r.repositoryId}::${r.workflowPath}`)
+        ),
+      ];
 
       const activeAttestations = uniqueTargets.length
         ? await prisma.attestation.findMany({
             where: {
               repositoryId: { in: [...new Set(runs.map((r) => r.repositoryId))] },
-              jobName: null,   // workflow-level only
+              jobName: null, // workflow-level only
               revokedAt: null,
               expiresAt: { gt: now },
             },
@@ -795,10 +735,7 @@ setInterval(() => {
 }, STATE_TTL_MS).unref();
 
 function escText(s: string): string {
-  return String(s)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 /**
@@ -831,9 +768,7 @@ export function createAuthRouter(): Router {
       scope: "read:org",
       state,
     });
-    res.redirect(
-      `https://github.com/login/oauth/authorize?${params.toString()}`
-    );
+    res.redirect(`https://github.com/login/oauth/authorize?${params.toString()}`);
   });
 
   /**
@@ -865,34 +800,27 @@ export function createAuthRouter(): Router {
     const clientId = process.env.GITHUB_CLIENT_ID;
     const clientSecret = process.env.GITHUB_CLIENT_SECRET;
     if (!clientId || !clientSecret) {
-      res
-        .type("text")
-        .status(503)
-        .send("GitHub OAuth is not fully configured on this server.");
+      res.type("text").status(503).send("GitHub OAuth is not fully configured on this server.");
       return;
     }
 
     try {
-      const tokenRes = await fetch(
-        "https://github.com/login/oauth/access_token",
-        {
-          method: "POST",
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            client_id: clientId,
-            client_secret: clientSecret,
-            code,
-          }),
-        }
-      );
+      const tokenRes = await fetch("https://github.com/login/oauth/access_token", {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          client_id: clientId,
+          client_secret: clientSecret,
+          code,
+        }),
+      });
 
       const data = (await tokenRes.json()) as Record<string, string>;
       if (data.error || !data.access_token) {
-        const msg =
-          data.error_description ?? data.error ?? "Token exchange failed";
+        const msg = data.error_description ?? data.error ?? "Token exchange failed";
         res
           .type("text")
           .status(400)
@@ -901,17 +829,11 @@ export function createAuthRouter(): Router {
       }
 
       // Token goes in the URL fragment — never sent to any server.
-      const base = (process.env.DASHBOARD_URL ?? "/dashboard").replace(
-        /\/$/,
-        ""
-      );
+      const base = (process.env.DASHBOARD_URL ?? "/dashboard").replace(/\/$/, "");
       res.redirect(`${base}#token=${encodeURIComponent(data.access_token)}`);
     } catch (err) {
       console.error("[action-gate] GET /auth/github/callback error:", err);
-      res
-        .type("text")
-        .status(500)
-        .send("Failed to exchange OAuth code for access token.");
+      res.type("text").status(500).send("Failed to exchange OAuth code for access token.");
     }
   });
 

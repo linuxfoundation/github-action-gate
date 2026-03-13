@@ -61,7 +61,7 @@ import { authenticateUser } from "../../api/middleware";
 const mockListAttestations = listAttestations as jest.MockedFunction<typeof listAttestations>;
 const mockGetRepository = getRepository as jest.MockedFunction<typeof getRepository>;
 const mockCreateAttestation = createAttestation as jest.MockedFunction<typeof createAttestation>;
-const mockRevokeAttestation = revokeAttestation as jest.MockedFunction<typeof revokeAttestation>;
+const _mockRevokeAttestation = revokeAttestation as jest.MockedFunction<typeof revokeAttestation>;
 const mockPrisma = prisma as jest.Mocked<typeof prisma>;
 
 // Make authenticateUser a pass-through by default (attaches a test user)
@@ -286,9 +286,7 @@ describe("POST /api/v1/attestations", () => {
 
   it("returns 409 when an active attestation already exists", async () => {
     mockGetRepository.mockResolvedValue(makeRepo() as any);
-    (mockPrisma.attestation.findFirst as jest.Mock).mockResolvedValue(
-      makeAttestation()
-    );
+    (mockPrisma.attestation.findFirst as jest.Mock).mockResolvedValue(makeAttestation());
 
     const app = buildApp();
     const res = await request(app)
@@ -336,9 +334,9 @@ describe("GET /api/v1/summary", () => {
   it("returns aggregated counts", async () => {
     (mockPrisma.repository.count as jest.Mock).mockResolvedValue(5);
     (mockPrisma.attestation.count as jest.Mock)
-      .mockResolvedValueOnce(20)  // totalAttestations
-      .mockResolvedValueOnce(15)  // activeAttestations
-      .mockResolvedValueOnce(3);  // expiringSoon
+      .mockResolvedValueOnce(20) // totalAttestations
+      .mockResolvedValueOnce(15) // activeAttestations
+      .mockResolvedValueOnce(3); // expiringSoon
 
     const app = buildApp();
     const res = await request(app).get("/api/v1/summary");
@@ -455,18 +453,14 @@ describe("POST /attestations/batch", () => {
 
   it("returns 400 when attestations array is missing", async () => {
     const app = buildApp();
-    const res = await request(app)
-      .post("/api/v1/attestations/batch")
-      .send({});
+    const res = await request(app).post("/api/v1/attestations/batch").send({});
     expect(res.status).toBe(400);
     expect(res.body.error).toMatch(/non-empty array/);
   });
 
   it("returns 400 when attestations array is empty", async () => {
     const app = buildApp();
-    const res = await request(app)
-      .post("/api/v1/attestations/batch")
-      .send({ attestations: [] });
+    const res = await request(app).post("/api/v1/attestations/batch").send({ attestations: [] });
     expect(res.status).toBe(400);
     expect(res.body.error).toMatch(/non-empty array/);
   });
@@ -474,9 +468,7 @@ describe("POST /attestations/batch", () => {
   it("returns 400 when batch size exceeds 50", async () => {
     const items = Array.from({ length: 51 }, () => ({ ...VALID_ITEM }));
     const app = buildApp();
-    const res = await request(app)
-      .post("/api/v1/attestations/batch")
-      .send({ attestations: items });
+    const res = await request(app).post("/api/v1/attestations/batch").send({ attestations: items });
     expect(res.status).toBe(400);
     expect(res.body.error).toMatch(/50/);
   });
@@ -492,9 +484,7 @@ describe("POST /attestations/batch", () => {
   });
 
   it("returns 207 with skipped when active attestation already exists", async () => {
-    (mockPrisma.attestation.findFirst as jest.Mock).mockResolvedValue(
-      makeAttestation()
-    );
+    (mockPrisma.attestation.findFirst as jest.Mock).mockResolvedValue(makeAttestation());
     const app = buildApp();
     const res = await request(app)
       .post("/api/v1/attestations/batch")
@@ -533,9 +523,7 @@ describe("POST /attestations/batch", () => {
     const res = await request(app)
       .post("/api/v1/attestations/batch")
       .send({
-        attestations: [
-          { repository: "no-slash", workflow_path: ".github/workflows/ci.yml" },
-        ],
+        attestations: [{ repository: "no-slash", workflow_path: ".github/workflows/ci.yml" }],
       });
     expect(res.status).toBe(207);
     expect(res.body.results[0].status).toBe("error");
@@ -544,9 +532,7 @@ describe("POST /attestations/batch", () => {
 
   it("returns mixed results for a batch with valid and invalid items", async () => {
     // First call's repo returns valid, second returns null (not installed)
-    mockGetRepository
-      .mockResolvedValueOnce(makeRepo() as any)
-      .mockResolvedValueOnce(null as any);
+    mockGetRepository.mockResolvedValueOnce(makeRepo() as any).mockResolvedValueOnce(null as any);
 
     const app = buildApp();
     const res = await request(app)

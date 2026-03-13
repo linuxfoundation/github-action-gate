@@ -34,9 +34,7 @@ export async function authenticateUser(
 ): Promise<void> {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith("Bearer ")) {
-    res
-      .status(401)
-      .json({ error: "Authorization header required (Bearer <github_token>)" });
+    res.status(401).json({ error: "Authorization header required (Bearer <github_token>)" });
     return;
   }
 

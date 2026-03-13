@@ -67,7 +67,7 @@ describe("checkAttestationStatus", () => {
   it('returns "active" when an active (non-expired, non-revoked) attestation exists', async () => {
     const att = makeAttestation();
     (mockAttestation.findFirst as jest.Mock)
-      .mockResolvedValueOnce(att)  // first call: active query
+      .mockResolvedValueOnce(att) // first call: active query
       .mockResolvedValueOnce(null); // second call: should not be reached
 
     const result = await checkAttestationStatus(REPO_ID, WF_PATH, null);
@@ -83,7 +83,7 @@ describe("checkAttestationStatus", () => {
   it('returns "expired" when attestation exists but is past expiresAt', async () => {
     const expired = makeAttestation({ expiresAt: PAST });
     (mockAttestation.findFirst as jest.Mock)
-      .mockResolvedValueOnce(null)     // active query returns nothing
+      .mockResolvedValueOnce(null) // active query returns nothing
       .mockResolvedValueOnce(expired); // expired query returns the record
 
     const result = await checkAttestationStatus(REPO_ID, WF_PATH, null);
@@ -158,12 +158,13 @@ describe("createAttestation", () => {
 
     // expiresAt should be approximately 90 days from now
     const expiresAt: Date = createCall.data.expiresAt;
-    const diffDays =
-      (expiresAt.getTime() - before.getTime()) / (1000 * 60 * 60 * 24);
+    const diffDays = (expiresAt.getTime() - before.getTime()) / (1000 * 60 * 60 * 24);
     expect(diffDays).toBeGreaterThanOrEqual(89.9);
     expect(diffDays).toBeLessThanOrEqual(90.1);
     expect(expiresAt.getTime()).toBeGreaterThanOrEqual(before.getTime());
-    expect(expiresAt.getTime()).toBeLessThanOrEqual(after.getTime() + 90 * 24 * 60 * 60 * 1000 + 1000);
+    expect(expiresAt.getTime()).toBeLessThanOrEqual(
+      after.getTime() + 90 * 24 * 60 * 60 * 1000 + 1000
+    );
   });
 
   it("sets expiresAt to expiryDays days in the future", async () => {
@@ -173,8 +174,7 @@ describe("createAttestation", () => {
     await createAttestation({ ...BASE_INPUT, expiryDays: 30 });
 
     const createCall = (mockAttestation.create as jest.Mock).mock.calls[0][0];
-    const diffDays =
-      (createCall.data.expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+    const diffDays = (createCall.data.expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24);
     expect(diffDays).toBeGreaterThanOrEqual(29.9);
     expect(diffDays).toBeLessThanOrEqual(30.1);
   });
@@ -235,9 +235,7 @@ describe("listAttestations", () => {
 
     const findManyCall = (mockAttestation.findMany as jest.Mock).mock.calls[0][0];
     expect(findManyCall.where.revokedAt).toBeNull();
-    expect(findManyCall.where.expiresAt).toEqual(
-      expect.objectContaining({ gt: expect.any(Date) })
-    );
+    expect(findManyCall.where.expiresAt).toEqual(expect.objectContaining({ gt: expect.any(Date) }));
   });
 
   it("does not apply activeOnly filter when not set", async () => {

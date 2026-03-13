@@ -162,11 +162,9 @@ describe("handleWorkflowRun", () => {
     await handleWorkflowRun(ctx);
 
     // checkGate should still be called, with jobs=[]
-    expect(mockCheckGate).toHaveBeenCalledWith(
-      "acme",
-      "app",
-      [{ path: ".github/workflows/ci.yml", jobs: [] }]
-    );
+    expect(mockCheckGate).toHaveBeenCalledWith("acme", "app", [
+      { path: ".github/workflows/ci.yml", jobs: [] },
+    ]);
   });
 
   it("passes parsed job names to checkGate", async () => {
@@ -175,11 +173,9 @@ describe("handleWorkflowRun", () => {
 
     await handleWorkflowRun(ctx);
 
-    expect(mockCheckGate).toHaveBeenCalledWith(
-      "acme",
-      "app",
-      [{ path: ".github/workflows/ci.yml", jobs: ["build", "test", "deploy"] }]
-    );
+    expect(mockCheckGate).toHaveBeenCalledWith("acme", "app", [
+      { path: ".github/workflows/ci.yml", jobs: ["build", "test", "deploy"] },
+    ]);
   });
 
   it("upserts the workflow run record after posting the check", async () => {
@@ -205,9 +201,7 @@ describe("handleWorkflowRun", () => {
 
   it("prunes runs when the repo has more than 500", async () => {
     const oldDate = new Date("2025-01-01");
-    (mockPrisma.workflowRun.findMany as jest.Mock).mockResolvedValue([
-      { createdAt: oldDate },
-    ]);
+    (mockPrisma.workflowRun.findMany as jest.Mock).mockResolvedValue([{ createdAt: oldDate }]);
     (mockPrisma.workflowRun.deleteMany as jest.Mock).mockResolvedValue({ count: 5 });
 
     const ctx = makeContext();

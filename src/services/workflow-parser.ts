@@ -26,9 +26,7 @@ export function parseWorkflowJobs(content: string): ParsedWorkflow {
 
   const w = workflow as Record<string, unknown>;
   const jobs =
-    w.jobs && typeof w.jobs === "object"
-      ? Object.keys(w.jobs as Record<string, unknown>)
-      : [];
+    w.jobs && typeof w.jobs === "object" ? Object.keys(w.jobs as Record<string, unknown>) : [];
 
   return {
     name: typeof w.name === "string" ? w.name : undefined,

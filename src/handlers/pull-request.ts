@@ -21,7 +21,8 @@ type PRContext = Context<any>;
  */
 export async function handlePullRequest(context: PRContext) {
   const { owner, repo } = context.repo() as { owner: string; repo: string };
-  const pr = (context.payload as { pull_request: { number: number; head: { sha: string } } }).pull_request;
+  const pr = (context.payload as { pull_request: { number: number; head: { sha: string } } })
+    .pull_request;
   const headSha = pr.head.sha;
   const installationId = (context.payload as { installation?: { id: number } }).installation?.id;
 

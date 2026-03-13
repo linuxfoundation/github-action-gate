@@ -1,24 +1,15 @@
 import { buildCheckOutput, checkGate } from "../../services/gate";
-import {
-  AttestationTier,
-  GateMode,
-  GateSummary,
-  GateCheckResult,
-} from "../../types";
+import { AttestationTier, GateMode, GateSummary, GateCheckResult } from "../../types";
 
 // ── Mock the attestation service ───────────────────────────────────────────────
 jest.mock("../../services/attestation");
 
-import {
-  getRepository,
-  checkAttestationStatus,
-} from "../../services/attestation";
+import { getRepository, checkAttestationStatus } from "../../services/attestation";
 
-const mockGetRepository = getRepository as jest.MockedFunction<
-  typeof getRepository
+const mockGetRepository = getRepository as jest.MockedFunction<typeof getRepository>;
+const mockCheckAttestationStatus = checkAttestationStatus as jest.MockedFunction<
+  typeof checkAttestationStatus
 >;
-const mockCheckAttestationStatus =
-  checkAttestationStatus as jest.MockedFunction<typeof checkAttestationStatus>;
 
 // ── Shared test data ───────────────────────────────────────────────────────────
 
@@ -206,15 +197,15 @@ describe("checkGate", () => {
   const WF = ".github/workflows/ci.yml";
 
   beforeEach(() => {
-    mockGetRepository.mockResolvedValue(REPO as unknown as Awaited<ReturnType<typeof getRepository>>);
+    mockGetRepository.mockResolvedValue(
+      REPO as unknown as Awaited<ReturnType<typeof getRepository>>
+    );
   });
 
   it("returns AUDIT/pass summary with empty checks when repository is not found", async () => {
     mockGetRepository.mockResolvedValue(null);
 
-    const summary = await checkGate("acme", "my-app", [
-      { path: WF, jobs: ["build"] },
-    ]);
+    const summary = await checkGate("acme", "my-app", [{ path: WF, jobs: ["build"] }]);
 
     expect(summary.mode).toBe(GateMode.AUDIT);
     // No checks → no issues → overallStatus is "pass" (nothing to block)
@@ -230,9 +221,7 @@ describe("checkGate", () => {
       attestation: makeAttestation() as any,
     });
 
-    const summary = await checkGate("acme", "my-app", [
-      { path: WF, jobs: ["build", "test"] },
-    ]);
+    const summary = await checkGate("acme", "my-app", [{ path: WF, jobs: ["build", "test"] }]);
 
     expect(summary.overallStatus).toBe("pass");
     expect(summary.checks).toHaveLength(1);
@@ -246,12 +235,13 @@ describe("checkGate", () => {
     const expiredAttestation = makeAttestation({ expiresAt: PAST });
     mockCheckAttestationStatus
       .mockResolvedValueOnce({ status: "expired", attestation: expiredAttestation as any })
-      .mockResolvedValueOnce({ status: "active", attestation: makeAttestation({ jobName: "build" }) as any })
+      .mockResolvedValueOnce({
+        status: "active",
+        attestation: makeAttestation({ jobName: "build" }) as any,
+      })
       .mockResolvedValueOnce({ status: "unattested" });
 
-    const summary = await checkGate("acme", "my-app", [
-      { path: WF, jobs: ["build", "test"] },
-    ]);
+    const summary = await checkGate("acme", "my-app", [{ path: WF, jobs: ["build", "test"] }]);
 
     // expired workflow-level + attested build + unattested test
     expect(summary.checks).toHaveLength(3);
@@ -286,14 +276,14 @@ describe("checkGate", () => {
 
   it("produces fail overallStatus in BLOCK mode when checks are unattested", async () => {
     const blockRepo = { ...REPO, mode: GateMode.BLOCK };
-    mockGetRepository.mockResolvedValue(blockRepo as unknown as Awaited<ReturnType<typeof getRepository>>);
+    mockGetRepository.mockResolvedValue(
+      blockRepo as unknown as Awaited<ReturnType<typeof getRepository>>
+    );
     mockCheckAttestationStatus
       .mockResolvedValueOnce({ status: "unattested" }) // workflow-level
       .mockResolvedValueOnce({ status: "unattested" }); // per-job: "deploy"
 
-    const summary = await checkGate("acme", "my-app", [
-      { path: WF, jobs: ["deploy"] },
-    ]);
+    const summary = await checkGate("acme", "my-app", [{ path: WF, jobs: ["deploy"] }]);
 
     expect(summary.mode).toBe(GateMode.BLOCK);
     expect(summary.overallStatus).toBe("fail");
@@ -302,12 +292,16 @@ describe("checkGate", () => {
   it("produces pass when all per-job checks are attested", async () => {
     mockCheckAttestationStatus
       .mockResolvedValueOnce({ status: "unattested" }) // workflow-level: no
-      .mockResolvedValueOnce({ status: "active", attestation: makeAttestation({ jobName: "build" }) as any })
-      .mockResolvedValueOnce({ status: "active", attestation: makeAttestation({ jobName: "test" }) as any });
+      .mockResolvedValueOnce({
+        status: "active",
+        attestation: makeAttestation({ jobName: "build" }) as any,
+      })
+      .mockResolvedValueOnce({
+        status: "active",
+        attestation: makeAttestation({ jobName: "test" }) as any,
+      });
 
-    const summary = await checkGate("acme", "my-app", [
-      { path: WF, jobs: ["build", "test"] },
-    ]);
+    const summary = await checkGate("acme", "my-app", [{ path: WF, jobs: ["build", "test"] }]);
 
     expect(summary.overallStatus).toBe("pass");
     expect(summary.checks.every((c) => c.status === "attested")).toBe(true);

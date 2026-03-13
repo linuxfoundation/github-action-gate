@@ -57,11 +57,7 @@ export = function actionGate(bot: Probot, { getRouter }: AppOptions) {
 
   // PR Gate: check attestations when workflow files are modified in a PR.
   bot.on(
-    [
-      "pull_request.opened",
-      "pull_request.synchronize",
-      "pull_request.reopened",
-    ],
+    ["pull_request.opened", "pull_request.synchronize", "pull_request.reopened"],
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     handlePullRequest as any
   );
@@ -79,8 +75,8 @@ export = function actionGate(bot: Probot, { getRouter }: AppOptions) {
     const installationId = context.payload.installation.id;
     for (const addedRepo of context.payload.repositories_added) {
       const [owner, name] = addedRepo.full_name.split("/");
-      await ensureRepository(owner, name, addedRepo.id, installationId).catch(
-        (err) => bot.log.error({ err }, `Failed to seed repo ${addedRepo.full_name}`)
+      await ensureRepository(owner, name, addedRepo.id, installationId).catch((err) =>
+        bot.log.error({ err }, `Failed to seed repo ${addedRepo.full_name}`)
       );
     }
   });

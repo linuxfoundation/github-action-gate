@@ -4,8 +4,7 @@
 // ── Configuration ─────────────────────────────────────────────────────────────
 
 const API_BASE =
-  (typeof window !== "undefined" && window.ACTION_GATE_API_URL) ||
-  window.location.origin;
+  (typeof window !== "undefined" && window.ACTION_GATE_API_URL) || window.location.origin;
 
 // ── State ─────────────────────────────────────────────────────────────────────
 
@@ -33,22 +32,22 @@ const selectedRunKeys = new Set();
 const $ = (id) => document.getElementById(id);
 
 const els = {
-  loading:   $("loading"),
-  errorMsg:  $("error-msg"),
-  wrapper:   $("table-wrapper"),
-  tbody:     $("attestations-body"),
-  count:     $("result-count"),
+  loading: $("loading"),
+  errorMsg: $("error-msg"),
+  wrapper: $("table-wrapper"),
+  tbody: $("attestations-body"),
+  count: $("result-count"),
   pagination: $("pagination"),
-  pageInfo:  $("page-info"),
-  btnPrev:   $("btn-prev"),
-  btnNext:   $("btn-next"),
-  filterStatus:   $("filter-status"),
-  filterOrg:      $("filter-org"),
-  filterRepo:     $("filter-repo"),
+  pageInfo: $("page-info"),
+  btnPrev: $("btn-prev"),
+  btnNext: $("btn-next"),
+  filterStatus: $("filter-status"),
+  filterOrg: $("filter-org"),
+  filterRepo: $("filter-repo"),
   filterWorkflow: $("filter-workflow"),
-  filterVoucher:  $("filter-voucher"),
+  filterVoucher: $("filter-voucher"),
   btnSearch: $("btn-search"),
-  btnReset:  $("btn-reset"),
+  btnReset: $("btn-reset"),
 };
 
 // ── API helpers ───────────────────────────────────────────────────────────────
@@ -78,7 +77,9 @@ function expiryStatus(expiresAt, revokedAt) {
 function formatDate(iso) {
   if (!iso) return "—";
   return new Date(iso).toLocaleDateString(undefined, {
-    year: "numeric", month: "short", day: "numeric",
+    year: "numeric",
+    month: "short",
+    day: "numeric",
   });
 }
 
@@ -98,9 +99,10 @@ function renderRow(a) {
   const workflowJob = a.jobName
     ? `${escapeHtml(a.workflowPath)}<br/><span class="text-muted mono">job: ${escapeHtml(a.jobName)}</span>`
     : `<span class="mono">${escapeHtml(a.workflowPath)}</span>`;
-  const tier = a.tier === "ORGANIZATION"
-    ? `<span class="badge badge-org">org</span>`
-    : `<span class="badge badge-user">user</span>`;
+  const tier =
+    a.tier === "ORGANIZATION"
+      ? `<span class="badge badge-org">org</span>`
+      : `<span class="badge badge-user">user</span>`;
   const voucher = `<a href="https://github.com/${escapeHtml(a.voucherGithubLogin)}" target="_blank" rel="noopener">@${escapeHtml(a.voucherGithubLogin)}</a>`;
   const affil = escapeHtml(a.voucherOrgAffiliation) || '<span class="text-muted">—</span>';
   const org = a.orgGithubLogin
@@ -152,14 +154,18 @@ function renderTable(data) {
 async function loadSummary() {
   try {
     const data = await apiFetch("/api/v1/summary");
-    $("stat-repos").querySelector(".stat-value").textContent =
-      (data.totalRepos ?? 0).toLocaleString();
-    $("stat-active").querySelector(".stat-value").textContent =
-      (data.activeAttestations ?? 0).toLocaleString();
-    $("stat-expiring").querySelector(".stat-value").textContent =
-      (data.expiringSoon ?? 0).toLocaleString();
-    $("stat-total").querySelector(".stat-value").textContent =
-      (data.totalAttestations ?? 0).toLocaleString();
+    $("stat-repos").querySelector(".stat-value").textContent = (
+      data.totalRepos ?? 0
+    ).toLocaleString();
+    $("stat-active").querySelector(".stat-value").textContent = (
+      data.activeAttestations ?? 0
+    ).toLocaleString();
+    $("stat-expiring").querySelector(".stat-value").textContent = (
+      data.expiringSoon ?? 0
+    ).toLocaleString();
+    $("stat-total").querySelector(".stat-value").textContent = (
+      data.totalAttestations ?? 0
+    ).toLocaleString();
   } catch {
     // Non-fatal — summary cards stay at "—".
   }
@@ -175,9 +181,9 @@ async function loadAttestations() {
 
   if (state.filters.active_only === "true") params.set("active_only", "true");
   if (state.filters.owner) params.set("owner", state.filters.owner);
-  if (state.filters.repo)  params.set("repo",  state.filters.repo);
+  if (state.filters.repo) params.set("repo", state.filters.repo);
   if (state.filters.workflow) params.set("workflow", state.filters.workflow);
-  if (state.filters.voucher)  params.set("voucher",  state.filters.voucher);
+  if (state.filters.voucher) params.set("voucher", state.filters.voucher);
   if (state.filters.org) {
     // org can match either verified org login OR self-reported affiliation.
     // The API supports filtering by org login; affiliation is client-side filtered below.
@@ -212,12 +218,18 @@ function getColValue(a, col) {
   switch (col) {
     case "repository":
       return a.repository ? `${a.repository.owner}/${a.repository.name}` : "";
-    case "workflowPath": return `${a.workflowPath}/${a.jobName ?? ""}`;
-    case "voucherGithubLogin": return a.voucherGithubLogin ?? "";
-    case "voucherOrgAffiliation": return a.voucherOrgAffiliation ?? "";
-    case "orgGithubLogin": return a.orgGithubLogin ?? "";
-    case "expiresAt": return a.expiresAt ?? "";
-    default: return "";
+    case "workflowPath":
+      return `${a.workflowPath}/${a.jobName ?? ""}`;
+    case "voucherGithubLogin":
+      return a.voucherGithubLogin ?? "";
+    case "voucherOrgAffiliation":
+      return a.voucherOrgAffiliation ?? "";
+    case "orgGithubLogin":
+      return a.orgGithubLogin ?? "";
+    case "expiresAt":
+      return a.expiresAt ?? "";
+    default:
+      return "";
   }
 }
 
@@ -248,26 +260,24 @@ function initSorting() {
 
 function applyFilters() {
   const repoInput = els.filterRepo.value.trim();
-  const [ownerPart, repoPart] = repoInput.includes("/")
-    ? repoInput.split("/", 2)
-    : ["", repoInput];
+  const [ownerPart, repoPart] = repoInput.includes("/") ? repoInput.split("/", 2) : ["", repoInput];
 
   state.filters.active_only = els.filterStatus.value === "active" ? "true" : "";
   state.filters.owner = ownerPart || "";
-  state.filters.repo  = repoPart || "";
+  state.filters.repo = repoPart || "";
   state.filters.workflow = els.filterWorkflow.value.trim();
-  state.filters.voucher  = els.filterVoucher.value.trim();
-  state.filters.org      = els.filterOrg.value.trim();
+  state.filters.voucher = els.filterVoucher.value.trim();
+  state.filters.org = els.filterOrg.value.trim();
   state.page = 1;
   loadAttestations();
 }
 
 function resetFilters() {
-  els.filterStatus.value   = "active";
-  els.filterOrg.value      = "";
-  els.filterRepo.value     = "";
+  els.filterStatus.value = "active";
+  els.filterOrg.value = "";
+  els.filterRepo.value = "";
   els.filterWorkflow.value = "";
-  els.filterVoucher.value  = "";
+  els.filterVoucher.value = "";
   state.filters = { active_only: "true", owner: "", repo: "", workflow: "", voucher: "", org: "" };
   state.page = 1;
   loadAttestations();
@@ -276,19 +286,33 @@ function resetFilters() {
 els.btnSearch.addEventListener("click", applyFilters);
 els.btnReset.addEventListener("click", resetFilters);
 [els.filterOrg, els.filterRepo, els.filterWorkflow, els.filterVoucher].forEach((inp) => {
-  inp.addEventListener("keypress", (e) => { if (e.key === "Enter") applyFilters(); });
+  inp.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") applyFilters();
+  });
 });
 els.filterStatus.addEventListener("change", applyFilters);
-els.btnPrev.addEventListener("click", () => { state.page--; loadAttestations(); });
-els.btnNext.addEventListener("click", () => { state.page++; loadAttestations(); });
+els.btnPrev.addEventListener("click", () => {
+  state.page--;
+  loadAttestations();
+});
+els.btnNext.addEventListener("click", () => {
+  state.page++;
+  loadAttestations();
+});
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 
 const AUTH_KEY = "ag_token";
 
-function getAuthToken() { return sessionStorage.getItem(AUTH_KEY); }
-function setAuthToken(t) { sessionStorage.setItem(AUTH_KEY, t); }
-function clearAuthToken() { sessionStorage.removeItem(AUTH_KEY); }
+function getAuthToken() {
+  return sessionStorage.getItem(AUTH_KEY);
+}
+function setAuthToken(t) {
+  sessionStorage.setItem(AUTH_KEY, t);
+}
+function clearAuthToken() {
+  sessionStorage.removeItem(AUTH_KEY);
+}
 
 async function initAuth() {
   // Pick up the token that GitHub OAuth drops into the URL fragment, then
@@ -317,7 +341,11 @@ async function loadCurrentUser(token) {
         "X-GitHub-Api-Version": "2022-11-28",
       },
     });
-    if (!res.ok) { clearAuthToken(); showLoggedOut(); return; }
+    if (!res.ok) {
+      clearAuthToken();
+      showLoggedOut();
+      return;
+    }
     const user = await res.json();
     showLoggedIn(user);
   } catch {
@@ -340,7 +368,7 @@ function showLoggedOut() {
   $("user-info").hidden = true;
   $("btn-vouch").hidden = true;
   cachedOrgs = [];
-  $('orgs-error-hint').hidden = true;
+  $("orgs-error-hint").hidden = true;
   populateOrgSelect();
 }
 
@@ -350,52 +378,59 @@ let cachedOrgs = [];
 
 async function loadUserOrgs(token) {
   if (!token) return;
-  $('orgs-loading-hint').hidden = false;
-  $('orgs-error-hint').hidden   = true;
+  $("orgs-loading-hint").hidden = false;
+  $("orgs-error-hint").hidden = true;
   try {
-    const res = await fetch('https://api.github.com/user/orgs?per_page=100', {
+    const res = await fetch("https://api.github.com/user/orgs?per_page=100", {
       headers: {
         Authorization: `Bearer ${token}`,
-        Accept: 'application/vnd.github+json',
-        'X-GitHub-Api-Version': '2022-11-28',
+        Accept: "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
       },
     });
-    const scopes = res.headers.get('X-OAuth-Scopes') ?? '(none)';
-    console.debug('[ActionGate] /user/orgs status:', res.status, '| OAuth scopes:', scopes);
+    const scopes = res.headers.get("X-OAuth-Scopes") ?? "(none)";
+    console.debug("[ActionGate] /user/orgs status:", res.status, "| OAuth scopes:", scopes);
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      console.warn('[ActionGate] /user/orgs error:', body);
+      console.warn("[ActionGate] /user/orgs error:", body);
       showOrgLoadError();
       return;
     }
     const orgs = await res.json();
-    console.debug('[ActionGate] orgs received:', orgs.map((o) => o.login));
+    console.debug(
+      "[ActionGate] orgs received:",
+      orgs.map((o) => o.login)
+    );
     cachedOrgs = orgs;
     if (cachedOrgs.length === 0) {
-      console.warn('[ActionGate] No orgs returned. Token may lack read:org scope or require SAML SSO authorization.');
-      showOrgLoadError('No organizations found for your account. Your token may need read:org scope or SAML SSO re-authorization.');
+      console.warn(
+        "[ActionGate] No orgs returned. Token may lack read:org scope or require SAML SSO authorization."
+      );
+      showOrgLoadError(
+        "No organizations found for your account. Your token may need read:org scope or SAML SSO re-authorization."
+      );
     } else {
       populateOrgSelect();
     }
   } catch (err) {
-    console.warn('[ActionGate] Failed to fetch orgs:', err);
+    console.warn("[ActionGate] Failed to fetch orgs:", err);
     showOrgLoadError();
   } finally {
-    $('orgs-loading-hint').hidden = true;
+    $("orgs-loading-hint").hidden = true;
   }
 }
 
 function showOrgLoadError(msg) {
-  const hint = $('orgs-error-hint');
+  const hint = $("orgs-error-hint");
   if (msg) {
     // Replace only the text node before the Retry button, preserving the button.
-    hint.firstChild.textContent = msg + ' ';
+    hint.firstChild.textContent = msg + " ";
   }
   hint.hidden = false;
   // Fall back to manual input automatically.
   populateOrgSelect();
-  $('f-org-select').value = '__other__';
-  $('org-login-custom-row').hidden = false;
+  $("f-org-select").value = "__other__";
+  $("org-login-custom-row").hidden = false;
 }
 
 function populateOrgSelect() {
@@ -463,18 +498,18 @@ $("f-tier").addEventListener("change", () => {
   if (isOrg) $("f-org-select").focus();
 });
 
-document.addEventListener('DOMContentLoaded', () => {
-  const retryBtn = $('btn-retry-orgs');
+document.addEventListener("DOMContentLoaded", () => {
+  const retryBtn = $("btn-retry-orgs");
   if (retryBtn) {
-    retryBtn.addEventListener('click', () => {
-      $('orgs-error-hint').hidden = true;
-      $('org-login-custom-row').hidden = true;
+    retryBtn.addEventListener("click", () => {
+      $("orgs-error-hint").hidden = true;
+      $("org-login-custom-row").hidden = true;
       loadUserOrgs(getAuthToken());
     });
   }
 });
 
-$('f-org-select').addEventListener('change', () => {
+$("f-org-select").addEventListener("change", () => {
   const isOther = $("f-org-select").value === "__other__";
   $("org-login-custom-row").hidden = !isOther;
   if (isOther) $("f-org-login").focus();
@@ -502,33 +537,33 @@ $("vouch-form").addEventListener("submit", async (e) => {
 
   const tier = $("f-tier").value;
   const orgSelectVal = $("f-org-select").value;
-  const orgLogin = orgSelectVal === "__other__"
-    ? ($("f-org-login").value.trim() || null)
-    : (orgSelectVal || null);
+  const orgLogin =
+    orgSelectVal === "__other__" ? $("f-org-login").value.trim() || null : orgSelectVal || null;
 
   if (tier === "organization" && !orgLogin) {
-    $("form-error").textContent = orgSelectVal === "__other__"
-      ? "Please enter the org login manually."
-      : "Please select a GitHub organization.";
+    $("form-error").textContent =
+      orgSelectVal === "__other__"
+        ? "Please enter the org login manually."
+        : "Please select a GitHub organization.";
     $("form-error").hidden = false;
     return;
   }
 
-  const jobName    = $("f-job").value.trim()    || null;
-  const affil      = $("f-affil").value.trim()  || null;
-  const notes      = $("f-notes").value.trim()  || null;
-  const expiryRaw  = parseInt($("f-expiry").value, 10);
+  const jobName = $("f-job").value.trim() || null;
+  const affil = $("f-affil").value.trim() || null;
+  const notes = $("f-notes").value.trim() || null;
+  const expiryRaw = parseInt($("f-expiry").value, 10);
   const expiryDays = Number.isFinite(expiryRaw) && expiryRaw > 0 ? expiryRaw : undefined;
 
   $("form-submit").disabled = true;
   $("form-submit").textContent = "Submitting\u2026";
 
   const body = { repository: repo, workflow_path: workflowPath, tier };
-  if (jobName)    body.job_name          = jobName;
-  if (orgLogin)   body.org_github_login  = orgLogin;
-  if (affil)      body.org_affiliation   = affil;
-  if (notes)      body.notes             = notes;
-  if (expiryDays) body.expiry_days       = expiryDays;
+  if (jobName) body.job_name = jobName;
+  if (orgLogin) body.org_github_login = orgLogin;
+  if (affil) body.org_affiliation = affil;
+  if (notes) body.notes = notes;
+  if (expiryDays) body.expiry_days = expiryDays;
 
   try {
     const res = await fetch(`${API_BASE}/api/v1/attestations`, {
@@ -548,16 +583,16 @@ $("vouch-form").addEventListener("submit", async (e) => {
         clearAuthToken();
         showLoggedOut();
         closeModal();
-        alert('Your session has expired \u2014 please log in again.');
+        alert("Your session has expired \u2014 please log in again.");
       } else if (res.status === 409) {
         closeModal();
         loadRecentRuns();
         loadAttestations();
       } else {
-        $('form-error').textContent = msg;
-        $('form-error').hidden = false;
-        $('form-submit').disabled = false;
-        $('form-submit').textContent = 'Submit attestation';
+        $("form-error").textContent = msg;
+        $("form-error").hidden = false;
+        $("form-submit").disabled = false;
+        $("form-submit").textContent = "Submit attestation";
       }
       return;
     }
@@ -580,11 +615,11 @@ function runConclusionBadge(status, conclusion) {
     return `<span class="badge badge-in-progress">In progress</span>`;
   }
   const map = {
-    success:   ["badge-success",   "Success"],
-    failure:   ["badge-failure",   "Failure"],
+    success: ["badge-success", "Success"],
+    failure: ["badge-failure", "Failure"],
     cancelled: ["badge-cancelled", "Cancelled"],
-    skipped:   ["badge-skipped",   "Skipped"],
-    timed_out: ["badge-failure",   "Timed out"],
+    skipped: ["badge-skipped", "Skipped"],
+    timed_out: ["badge-failure", "Timed out"],
     action_required: ["badge-warning", "Action required"],
   };
   const [cls, label] = map[conclusion] ?? ["badge-cancelled", conclusion ?? "Unknown"];
@@ -595,8 +630,8 @@ function timeAgo(iso) {
   if (!iso) return "—";
   const diff = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diff / 60_000);
-  if (mins < 1)   return "just now";
-  if (mins < 60)  return `${mins}m ago`;
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
   const hours = Math.floor(mins / 60);
   if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
@@ -609,36 +644,35 @@ function renderRunRow(run) {
     : "—";
   // Only allow safe HTTPS URLs as the workflow run link to guard against
   // javascript: URI injection — htmlUrl comes from the database via GitHub API.
-  const safeHtmlUrl =
-    run.htmlUrl && /^https:\/\//.test(run.htmlUrl) ? run.htmlUrl : null;
+  const safeHtmlUrl = run.htmlUrl && /^https:\/\//.test(run.htmlUrl) ? run.htmlUrl : null;
   const workflowLink = safeHtmlUrl
     ? `<a href="${escapeHtml(safeHtmlUrl)}" target="_blank" rel="noopener" class="mono">${escapeHtml(run.workflowPath)}</a>`
     : `<span class="mono">${escapeHtml(run.workflowPath)}</span>`;
   const branch = run.headBranch
     ? `<span class="mono">${escapeHtml(run.headBranch)}</span>`
     : '<span class="text-muted">—</span>';
-  const event   = `<span class="badge-event">${escapeHtml(run.event)}</span>`;
-  const status  = runConclusionBadge(run.status, run.conclusion);
+  const event = `<span class="badge-event">${escapeHtml(run.event)}</span>`;
+  const status = runConclusionBadge(run.status, run.conclusion);
   const started = `<span title="${escapeHtml(run.runStartedAt ?? run.createdAt)}">${timeAgo(run.runStartedAt ?? run.createdAt)}</span>`;
 
-  const repoFull = run.repository
-    ? `${run.repository.owner}/${run.repository.name}`
-    : "";
-  const vouchBtn = repoFull && !run.isAttested
-    ? `<button class="btn btn-primary btn-sm btn-vouch-run"
+  const repoFull = run.repository ? `${run.repository.owner}/${run.repository.name}` : "";
+  const vouchBtn =
+    repoFull && !run.isAttested
+      ? `<button class="btn btn-primary btn-sm btn-vouch-run"
          data-repo="${escapeHtml(repoFull)}"
          data-workflow="${escapeHtml(run.workflowPath)}"
          title="Vouch for this workflow">Vouch</button>`
-    : repoFull
-      ? `<span class="badge badge-success" title="Active attestation exists">✓ Vouched</span>`
-      : "";
+      : repoFull
+        ? `<span class="badge badge-success" title="Active attestation exists">✓ Vouched</span>`
+        : "";
 
   const runKey = repoFull ? `${escapeHtml(repoFull)}::${escapeHtml(run.workflowPath)}` : "";
-  const checkCell = repoFull && !run.isAttested
-    ? `<td><input type="checkbox" class="run-select" data-key="${runKey}"
+  const checkCell =
+    repoFull && !run.isAttested
+      ? `<td><input type="checkbox" class="run-select" data-key="${runKey}"
          data-repo="${escapeHtml(repoFull)}" data-workflow="${escapeHtml(run.workflowPath)}"
          title="Select for batch vouch"${selectedRunKeys.has(runKey) ? " checked" : ""}></td>`
-    : "<td></td>";
+      : "<td></td>";
 
   return `<tr>
     ${checkCell}
@@ -655,23 +689,25 @@ function renderRunRow(run) {
 async function loadRecentRuns() {
   $("runs-loading").hidden = false;
   $("runs-wrapper").hidden = true;
-  $("runs-error").hidden   = true;
+  $("runs-error").hidden = true;
 
   try {
     const data = await apiFetch("/api/v1/runs/recent?limit=10");
     const runs = data.runs ?? [];
     // Filter out runs that are already attested at the workflow level.
     const unvouched = runs.filter((r) => !r.isAttested);
-    $('runs-count').textContent = unvouched.length > 0
-      ? `${unvouched.length} unvouched run${unvouched.length !== 1 ? 's' : ''}`
-      : '';
+    $("runs-count").textContent =
+      unvouched.length > 0
+        ? `${unvouched.length} unvouched run${unvouched.length !== 1 ? "s" : ""}`
+        : "";
 
     if (unvouched.length === 0) {
-      $('runs-body').innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--color-muted);padding:24px;">All recent workflow runs have active attestations — nothing to vouch for.</td></tr>`;
+      $("runs-body").innerHTML =
+        `<tr><td colspan="8" style="text-align:center;color:var(--color-muted);padding:24px;">All recent workflow runs have active attestations — nothing to vouch for.</td></tr>`;
       const selectAll = $("runs-select-all");
       if (selectAll) selectAll.checked = false;
     } else {
-      $('runs-body').innerHTML = unvouched.map(renderRunRow).join('');
+      $("runs-body").innerHTML = unvouched.map(renderRunRow).join("");
       // Wire up per-row checkboxes
       document.querySelectorAll(".run-select").forEach((cb) => {
         cb.addEventListener("change", (e) => {
@@ -703,7 +739,7 @@ async function loadRecentRuns() {
     }
 
     $("runs-loading").hidden = true;
-    $("runs-wrapper").hidden  = false;
+    $("runs-wrapper").hidden = false;
   } catch (err) {
     $("runs-loading").hidden = true;
     $("runs-error").textContent = `Failed to load runs: ${err.message}`;
@@ -766,7 +802,7 @@ async function vouchSelected() {
       const parts = [];
       if (summary.created) parts.push(`${summary.created} created`);
       if (summary.skipped) parts.push(`${summary.skipped} skipped (already attested)`);
-      if (summary.errors)  parts.push(`${summary.errors} failed`);
+      if (summary.errors) parts.push(`${summary.errors} failed`);
       if (parts.length) alert(`Batch vouch complete: ${parts.join(", ")}.`);
     }
   } catch (err) {
@@ -788,8 +824,8 @@ document.addEventListener("click", (e) => {
     alert("Please log in with GitHub before creating an attestation.");
     return;
   }
-  $("f-repo").value     = btn.dataset.repo     ?? "";
-  $("f-workflow").value = btn.dataset.workflow  ?? "";
+  $("f-repo").value = btn.dataset.repo ?? "";
+  $("f-workflow").value = btn.dataset.workflow ?? "";
   openModal();
 });
 

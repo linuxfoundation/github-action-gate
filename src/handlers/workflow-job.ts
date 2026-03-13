@@ -14,9 +14,7 @@ const CHECK_NAME_PREFIX = "Action Gate / Job";
  * Add "Action Gate / Job: <jobName>" as a required status check in your
  * branch protection settings to actually gate merges/runs on this check.
  */
-export async function handleWorkflowJob(
-  context: Context<"workflow_job.queued">
-) {
+export async function handleWorkflowJob(context: Context<"workflow_job.queued">) {
   const { owner, repo } = context.repo();
   const job = context.payload.workflow_job;
   const installationId = context.payload.installation?.id;
@@ -26,12 +24,7 @@ export async function handleWorkflowJob(
     return;
   }
 
-  await ensureRepository(
-    owner,
-    repo,
-    context.payload.repository.id,
-    installationId
-  );
+  await ensureRepository(owner, repo, context.payload.repository.id, installationId);
 
   // Fetch the parent workflow run to get the workflow file path.
   let workflowPath: string;
@@ -50,9 +43,7 @@ export async function handleWorkflowJob(
     return;
   }
 
-  const summary = await checkGate(owner, repo, [
-    { path: workflowPath, jobs: [job.name] },
-  ]);
+  const summary = await checkGate(owner, repo, [{ path: workflowPath, jobs: [job.name] }]);
   const output = buildCheckOutput(summary);
 
   await context.octokit.checks.create({
