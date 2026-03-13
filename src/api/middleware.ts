@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { Octokit } from "@octokit/rest";
+import { RetryOctokit } from "./octokit";
 
 export interface GitHubUser {
   id: number;
@@ -51,7 +51,7 @@ export async function authenticateUser(
 
   // Validate against GitHub API.
   try {
-    const octokit = new Octokit({ auth: token });
+    const octokit = new RetryOctokit({ auth: token });
     const { data } = await octokit.users.getAuthenticated();
 
     const user: GitHubUser = {

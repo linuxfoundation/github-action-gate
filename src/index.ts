@@ -1,6 +1,7 @@
 import { Probot } from "probot";
 import cors from "cors";
 import express, { Router } from "express";
+import rateLimit from "express-rate-limit";
 import { handlePullRequest } from "./handlers/pull-request";
 import { handleWorkflowRun } from "./handlers/workflow-run";
 import { handleWorkflowJob } from "./handlers/workflow-job";
@@ -40,12 +41,36 @@ export = function actionGate(bot: Probot, { getRouter }: AppOptions) {
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("X-Frame-Options", "DENY");
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+    res.setHeader(
+      "Content-Security-Policy",
+      "default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; " +
+        "img-src 'self' https://avatars.githubusercontent.com data:; connect-src 'self' https:; " +
+        "font-src 'self'; frame-ancestors 'none'; form-action 'self'"
+    );
     next();
   });
 
+  // Rate limiting — 100 requests per minute per IP on the API.
+  const apiLimiter = rateLimit({
+    windowMs: 60_000,
+    max: 100,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many requests — please try again later" },
+  });
+  // Stricter limit for auth endpoints — 20 per minute per IP.
+  const authLimiter = rateLimit({
+    windowMs: 60_000,
+    max: 20,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many authentication requests — please try again later" },
+  });
+
   router.use(express.json({ limit: "256kb" }));
-  router.use("/api/v1", createApiRouter());
-  router.use("/auth", createAuthRouter());
+  router.use("/api/v1", apiLimiter, createApiRouter());
+  router.use("/auth", authLimiter, createAuthRouter());
 
   // Serve the static dashboard locally during development.
   if (process.env.NODE_ENV !== "production") {

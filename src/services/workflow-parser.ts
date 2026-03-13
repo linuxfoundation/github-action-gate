@@ -13,9 +13,16 @@ export interface ParsedWorkflow {
  * result on malformed input.
  */
 export function parseWorkflowJobs(content: string): ParsedWorkflow {
+  // Reject excessively large workflow files (>256 KB) to prevent abuse.
+  if (content.length > 256_000) {
+    return { jobs: [] };
+  }
+
   let workflow: unknown;
   try {
-    workflow = yaml.load(content);
+    // Use JSON_SCHEMA to prevent YAML alias/anchor expansion ("billion laughs" bombs).
+    // GitHub Actions YAML doesn't use anchors, so JSON_SCHEMA is sufficient.
+    workflow = yaml.load(content, { schema: yaml.JSON_SCHEMA });
   } catch {
     return { jobs: [] };
   }

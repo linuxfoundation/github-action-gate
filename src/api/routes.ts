@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import { Router, Request, Response } from "express";
-import { Octokit } from "@octokit/rest";
 import { AttestationTier, GateMode } from "../types";
+import { RetryOctokit } from "./octokit";
 import {
   createAttestation,
   listAttestations,
@@ -157,7 +157,7 @@ export function createApiRouter(): Router {
           typeof org_github_login === "string"
         ) {
           try {
-            const userOctokit = new Octokit({ auth: req.token });
+            const userOctokit = new RetryOctokit({ auth: req.token });
             await userOctokit.orgs.checkMembershipForUser({
               org: org_github_login,
               username: req.user!.login,
@@ -206,6 +206,15 @@ export function createApiRouter(): Router {
 
         res.status(201).json(attestation);
       } catch (err) {
+        // Unique constraint violation from the partial index means a concurrent
+        // request already created an attestation for this exact target.
+        if (err instanceof Error && err.message.includes("Unique constraint")) {
+          res.status(409).json({
+            error:
+              "An active attestation for this target was just created by a concurrent request.",
+          });
+          return;
+        }
         console.error("[action-gate] POST /attestations error:", err);
         res.status(500).json({ error: "Internal server error" });
       }
@@ -356,7 +365,7 @@ export function createApiRouter(): Router {
         );
         const orgMembershipOk = new Map<string, boolean>();
         if (orgLoginSet.size > 0) {
-          const userOctokit = new Octokit({ auth: req.token });
+          const userOctokit = new RetryOctokit({ auth: req.token });
           await Promise.all(
             [...orgLoginSet].map(async (org) => {
               try {
@@ -435,8 +444,23 @@ export function createApiRouter(): Router {
             orgGithubLogin: it.org_github_login,
             notes: it.notes,
             expiryDays: it.expiry_days ?? repoRecord.expiryDays,
+          }).catch((createErr) => {
+            // Unique constraint violation = concurrent request already created it.
+            if (createErr instanceof Error && createErr.message.includes("Unique constraint")) {
+              return null;
+            }
+            throw createErr;
           });
-          results.push({ index: it.index, status: "created", attestation });
+          if (attestation) {
+            results.push({ index: it.index, status: "created", attestation });
+          } else {
+            results.push({
+              index: it.index,
+              status: "skipped",
+              reason:
+                "An active attestation for this target was just created by a concurrent request",
+            });
+          }
         }
 
         const created = results.filter((r) => r.status === "created").length;
@@ -477,7 +501,7 @@ export function createApiRouter(): Router {
 
         if (!isOwner) {
           try {
-            const userOctokit = new Octokit({ auth: req.token });
+            const userOctokit = new RetryOctokit({ auth: req.token });
             const { data: perm } = await userOctokit.repos.getCollaboratorPermissionLevel({
               owner: attestation.repository.owner,
               repo: attestation.repository.name,
@@ -583,7 +607,7 @@ export function createApiRouter(): Router {
 
         // Verify requester holds admin permission on the repo.
         try {
-          const userOctokit = new Octokit({ auth: req.token });
+          const userOctokit = new RetryOctokit({ auth: req.token });
           const { data: perm } = await userOctokit.repos.getCollaboratorPermissionLevel({
             owner,
             repo,

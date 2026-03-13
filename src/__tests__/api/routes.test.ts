@@ -1,24 +1,27 @@
 import request from "supertest";
 import express from "express";
 
-// @octokit/rest ships as ESM; mock it before importing anything that requires it
-jest.mock("@octokit/rest", () => ({
-  Octokit: jest.fn().mockImplementation(() => ({
-    orgs: {
-      checkMembershipForUser: jest.fn().mockResolvedValue({}),
-    },
-    repos: {
-      getCollaboratorPermissionLevel: jest
-        .fn()
-        .mockResolvedValue({ data: { permission: "admin" } }),
-    },
-    users: {
-      getAuthenticated: jest.fn().mockResolvedValue({
-        data: { id: 1, login: "alice", name: "Alice", email: null },
-      }),
-    },
-  })),
+// @octokit/rest ships as ESM; mock it before importing anything that requires it.
+// The mock Octokit needs a .plugin() method that returns itself, since
+// src/api/octokit.ts calls Octokit.plugin(retry) to create RetryOctokit.
+const MockOctokit = jest.fn().mockImplementation(() => ({
+  orgs: {
+    checkMembershipForUser: jest.fn().mockResolvedValue({}),
+  },
+  repos: {
+    getCollaboratorPermissionLevel: jest.fn().mockResolvedValue({ data: { permission: "admin" } }),
+  },
+  users: {
+    getAuthenticated: jest.fn().mockResolvedValue({
+      data: { id: 1, login: "alice", name: "Alice", email: null },
+    }),
+  },
 }));
+// .plugin() returns the same constructor so RetryOctokit === MockOctokit
+(MockOctokit as any).plugin = jest.fn().mockReturnValue(MockOctokit);
+
+jest.mock("@octokit/rest", () => ({ Octokit: MockOctokit }));
+jest.mock("@octokit/plugin-retry", () => ({ retry: jest.fn() }));
 
 import { createApiRouter } from "../../api/routes";
 

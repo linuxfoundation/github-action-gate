@@ -2,6 +2,7 @@
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
   Permissions-Policy: geolocation=(), camera=(), microphone=()
   # script-src includes 'unsafe-inline' for the inline config block in index.html
   # (window.ACTION_GATE_API_URL = "..."). connect-src allows the configured API
