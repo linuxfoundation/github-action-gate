@@ -4,7 +4,7 @@
   "description": "GitHub App that gates GitHub Actions workflows/jobs with ownership attestations",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && tsc -p tsconfig.worker.json",
     "start": "probot run ./dist/index.js",
     "dev": "tsc && probot run ./dist/index.js",
     "prisma:generate": "prisma generate",
@@ -20,9 +20,11 @@
     "lint:fix": "eslint 'src/**/*.ts' --fix",
     "format": "prettier --write 'src/**/*.ts' 'docs/app.js'",
     "format:check": "prettier --check 'src/**/*.ts' 'docs/app.js'",
-    "test": "jest --passWithNoTests"
+    "test": "jest --passWithNoTests",
+    "pages:deploy": "wrangler pages deploy docs --project-name action-gate-dashboard"
   },
   "dependencies": {
+    "@octokit/auth-app": "^8.2.0",
     "@octokit/plugin-retry": "^8.1.0",
     "@octokit/rest": "^21.0.2",
     "@prisma/adapter-d1": "^5.22.0",

@@ -1,5 +1,5 @@
 name = "github-action-gate"
-main = "dist/index.js"
+main = "dist-worker/worker.js"
 compatibility_date = "2024-11-01"
 
 # Enable the Node.js compatibility layer so that Node built-ins (crypto,
@@ -14,8 +14,7 @@ compatibility_flags = ["nodejs_compat"]
 [[d1_databases]]
 binding      = "DB"           # accessed in Worker code as env.DB
 database_name = "action-gate"
-database_id  = ""             # TODO: paste ID from `wrangler d1 create action-gate`
-
+database_id = "932750ff-2ecd-4a31-a427-f72494d20e12"
 # ── Environment variables ────────────────────────────────────────────────────
 [vars]
 NODE_ENV = "production"

@@ -29,3 +29,5 @@ Thumbs.db
 # Coverage / test output
 coverage/
 
+dist-worker/
+.wrangler/

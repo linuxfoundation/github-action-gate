@@ -832,12 +832,16 @@ export function createApiRouter(): Router {
 // Short-lived CSRF nonces for the OAuth code exchange.  state → expiry timestamp.
 const oauthStates = new Map<string, number>();
 const STATE_TTL_MS = 10 * 60 * 1_000;
-setInterval(() => {
+
+/** Prune expired OAuth nonces.  Called lazily instead of via setInterval
+ *  so that the module can be imported inside Cloudflare Workers (which
+ *  forbid timers in global scope). */
+function pruneOauthStates(): void {
   const now = Date.now();
   for (const [key, exp] of oauthStates) {
     if (exp < now) oauthStates.delete(key);
   }
-}, STATE_TTL_MS).unref();
+}
 
 function escText(s: string): string {
   return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -866,6 +870,7 @@ export function createAuthRouter(): Router {
     }
 
     const state = crypto.randomBytes(16).toString("hex");
+    pruneOauthStates();
     oauthStates.set(state, Date.now() + STATE_TTL_MS);
 
     const params = new URLSearchParams({
