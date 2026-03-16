@@ -8,7 +8,7 @@
     "build": "tsc && tsc -p tsconfig.worker.json",
     "start": "probot run ./dist/index.js",
     "dev": "tsc && probot run ./dist/index.js",
-    "prisma:generate": "prisma generate",
+    "prisma:generate": "prisma generate && bash scripts/patch-prisma-for-workers.sh",
     "prisma:migrate": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",

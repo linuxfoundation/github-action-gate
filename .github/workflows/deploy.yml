@@ -29,7 +29,9 @@ jobs:
         run: npm ci
 
       - name: Generate Prisma client
-        run: ./node_modules/.bin/prisma generate
+        run: |
+          ./node_modules/.bin/prisma generate
+          bash scripts/patch-prisma-for-workers.sh
 
       - name: Build
         run: npm run build
