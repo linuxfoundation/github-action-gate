@@ -36,10 +36,14 @@ jobs:
 
       # Overwrite the D1 database ID in wrangler.toml from secrets so the
       # committed value can be a placeholder or a different environment's ID.
+      # Skips gracefully when the secret is not set.
       - name: Set D1 database ID
-        if: ${{ secrets.CF_D1_DATABASE_ID != '' }}
         run: |
-          sed -i 's|^database_id = "[^"]*"|database_id = "${{ secrets.CF_D1_DATABASE_ID }}"|' wrangler.toml
+          if [ -n "$CF_D1_DATABASE_ID" ]; then
+            sed -i 's|^database_id = "[^"]*"|database_id = "'"$CF_D1_DATABASE_ID"'"|' wrangler.toml
+          fi
+        env:
+          CF_D1_DATABASE_ID: ${{ secrets.CF_D1_DATABASE_ID }}
 
       - name: Run D1 migrations
         run: ./node_modules/.bin/wrangler d1 migrations apply action-gate
