@@ -335,7 +335,7 @@ function expressToFetchResponse(
     });
 
     // Build a minimal Node ServerResponse-like object that captures the output
-    const chunks: Uint8Array[] = [];
+    const chunks: Uint8Array<ArrayBuffer>[] = [];
     let statusCode = 200;
     const responseHeaders = new Headers();
     const res = {
@@ -362,7 +362,8 @@ function expressToFetchResponse(
         }
       },
       write(chunk: string | Uint8Array) {
-        chunks.push(typeof chunk === "string" ? new TextEncoder().encode(chunk) : chunk);
+        const data = typeof chunk === "string" ? new TextEncoder().encode(chunk) : new Uint8Array(chunk);
+        chunks.push(data);
         return true;
       },
       end(chunk?: string | Uint8Array) {
