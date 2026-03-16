@@ -34,12 +34,12 @@ jobs:
       - name: Build
         run: npm run build
 
-      # Inject the D1 database ID from secrets into wrangler.toml.
-      # The value is not sensitive (it's a public identifier), but keeping
-      # it out of source control avoids committing a specific account's ID.
+      # Overwrite the D1 database ID in wrangler.toml from secrets so the
+      # committed value can be a placeholder or a different environment's ID.
       - name: Set D1 database ID
+        if: ${{ secrets.CF_D1_DATABASE_ID != '' }}
         run: |
-          sed -i 's|^database_id  = ""|database_id  = "${{ secrets.CF_D1_DATABASE_ID }}"|' wrangler.toml
+          sed -i 's|^database_id = "[^"]*"|database_id = "${{ secrets.CF_D1_DATABASE_ID }}"|' wrangler.toml
 
       - name: Run D1 migrations
         run: ./node_modules/.bin/wrangler d1 migrations apply action-gate
@@ -56,7 +56,7 @@ jobs:
 
       # ── Deploy dashboard (Cloudflare Pages) ──────────────────────────────────
       - name: Deploy dashboard
-        run: ./node_modules/.bin/wrangler pages deploy docs --project-name github-action-gate-dashboard
+        run: ./node_modules/.bin/wrangler pages deploy docs --project-name action-gate-dashboard
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
