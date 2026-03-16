@@ -1,7 +1,9 @@
 name: Deploy to Cloudflare
 
 on:
-  push:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
     branches: [main]
   workflow_dispatch:
 
@@ -15,6 +17,10 @@ jobs:
     environment: production
     permissions:
       contents: read
+    # Only deploy when CI passed or when triggered manually.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
 
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
