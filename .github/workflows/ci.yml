@@ -26,7 +26,9 @@ jobs:
         run: npm ci
 
       - name: Generate Prisma client
-        run: npx prisma generate
+        run: |
+          npx prisma generate
+          bash scripts/patch-prisma-for-workers.sh
 
       - name: Type check
         run: npm run type-check
