@@ -69,11 +69,42 @@ jobs:
       - name: Run tests
         run: npm test
 
-  # ── Deploy (main only, after lint + test pass) ─────────────────────────────
+  # ── Detect deployable changes ────────────────────────────────────────────────
+  changes:
+    name: Check changes
+    runs-on: ubuntu-latest
+    outputs:
+      deployable: ${{ steps.filter.outputs.deployable }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+
+      - name: Detect deployable file changes
+        id: filter
+        run: |
+          # On manual dispatch, always deploy.
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "deployable=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          CHANGED=$(git diff --name-only HEAD~1 HEAD)
+          echo "Changed files:"
+          echo "$CHANGED"
+          if echo "$CHANGED" | grep -qE '^(src/|docs/|prisma/|scripts/|package|tsconfig|wrangler\.toml)'; then
+            echo "deployable=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "deployable=false" >> "$GITHUB_OUTPUT"
+            echo "No deployable changes — deploy will be skipped."
+          fi
+
+  # ── Deploy (main only, after lint + test pass, deployable changes only) ────
   deploy:
     name: Deploy
-    needs: [lint, test]
-    if: github.ref == 'refs/heads/main'
+    needs: [lint, test, changes]
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      needs.changes.outputs.deployable == 'true'
     runs-on: ubuntu-latest
     environment: production
     permissions:
