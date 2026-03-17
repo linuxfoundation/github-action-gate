@@ -302,19 +302,27 @@ npm run d1:migrate:local   # apply migrations to local D1 environment
 npm run d1:migrate:remote  # apply migrations to production D1
 ```
 
-### Pre-commit checks
+### Pre-commit hooks
 
-Always run the full CI check locally before committing:
+This project uses [pre-commit](https://pre-commit.com/) to run checks
+automatically on every commit:
+
+```bash
+pip install pre-commit   # if not already installed
+pre-commit install       # one-time setup
+```
+
+Hooks include: trailing-whitespace, end-of-file-fixer, YAML/JSON validation,
+ESLint, markdownlint, ShellCheck, and actionlint. To run all hooks manually:
+
+```bash
+pre-commit run --all-files
+```
+
+You should also run the full CI check before pushing:
 
 ```bash
 npm run type-check && npm run lint && npm test
-```
-
-For workflow or script changes, also run:
-
-```bash
-actionlint .github/workflows/*.yml
-shellcheck scripts/*.sh
 ```
 
 ---

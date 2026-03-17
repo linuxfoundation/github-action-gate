@@ -48,9 +48,11 @@ The deploy step in CI stamps the git SHA into the dashboard footer via
 ### CI Discipline
 
 - **Always run the full CI check locally before committing**:
+
   ```sh
   npm run type-check && npm run lint && npm test
   ```
+
   Never skip any step. All three must pass before `git commit`.
 - Also run `actionlint` and `shellcheck` for workflow/script changes.
 
