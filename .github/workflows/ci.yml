@@ -9,6 +9,11 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+    inputs:
+      force_deploy:
+        description: "Force deploy even if no deployable changes detected"
+        type: boolean
+        default: false
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -108,7 +113,8 @@ jobs:
     needs: [lint, test, changes]
     if: >-
       github.ref == 'refs/heads/main' &&
-      needs.changes.outputs.deployable == 'true'
+      (needs.changes.outputs.deployable == 'true' ||
+       inputs.force_deploy == true)
     runs-on: ubuntu-latest
     environment: production
     permissions:
