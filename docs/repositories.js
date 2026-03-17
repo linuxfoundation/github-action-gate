@@ -89,26 +89,50 @@ async function loadRepos() {
   }
 }
 
-// ── Auth (display only — no login required for this page) ─────────────────────
+// ── Auth ──────────────────────────────────────────────────────────────────────
 
-function getToken() {
-  return localStorage.getItem("gh_token");
-}
+const AUTH_KEY = "ag_token";
 
-async function checkAuth() {
-  const token = getToken();
-  if (!token) return;
+function getAuthToken()  { return sessionStorage.getItem(AUTH_KEY); }
+function setAuthToken(t) { sessionStorage.setItem(AUTH_KEY, t); }
+function clearAuthToken() { sessionStorage.removeItem(AUTH_KEY); }
+
+async function initAuth() {
+  const hash = window.location.hash;
+  if (hash.startsWith("#token=")) {
+    const token = decodeURIComponent(hash.slice(7));
+    setAuthToken(token);
+    history.replaceState(null, "", window.location.pathname + window.location.search);
+  }
+
+  const token = getAuthToken();
+  if (!token) { showLoggedOut(); return; }
+
   try {
     const res = await fetch("https://api.github.com/user", {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+      },
     });
-    if (!res.ok) return;
+    if (!res.ok) { clearAuthToken(); showLoggedOut(); return; }
     const user = await res.json();
-    $("user-avatar").src = user.avatar_url;
-    $("user-avatar").alt = `@${escapeHtml(user.login)}`;
-    $("user-login").textContent = `@${user.login}`;
-    $("user-info").hidden = false;
-  } catch { /* ignore */ }
+    showLoggedIn(user);
+  } catch { showLoggedOut(); }
+}
+
+function showLoggedIn(user) {
+  $("btn-login").hidden = true;
+  $("user-info").hidden = false;
+  $("user-avatar").src = user.avatar_url ?? "";
+  $("user-avatar").alt = `@${escapeHtml(user.login)}`;
+  $("user-login").textContent = `@${user.login}`;
+}
+
+function showLoggedOut() {
+  $("btn-login").hidden = false;
+  $("user-info").hidden = true;
 }
 
 // ── Events ────────────────────────────────────────────────────────────────────
@@ -119,14 +143,17 @@ $("btn-prev").addEventListener("click", () => {
 $("btn-next").addEventListener("click", () => {
   if (state.page < state.totalPages) { state.page++; loadRepos(); }
 });
-$("btn-logout")?.addEventListener("click", () => {
-  localStorage.removeItem("gh_token");
-  window.location.href = "index.html";
+$("btn-login").addEventListener("click", () => {
+  window.location.href = `${API_BASE}/api/login`;
+});
+$("btn-logout").addEventListener("click", () => {
+  clearAuthToken();
+  showLoggedOut();
 });
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 
-checkAuth();
+initAuth();
 loadRepos();
 
 // ── Deploy SHA link (same pattern as main dashboard) ──────────────────────────
