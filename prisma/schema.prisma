@@ -1,6 +1,6 @@
-# SPDX-FileCopyrightText: 2026 The Linux Foundation
-#
-# SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText: 2026 The Linux Foundation
+//
+// SPDX-License-Identifier: Apache-2.0
 
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
