@@ -176,6 +176,7 @@ function buildExpressApp(env: Env): express.Express {
     process.env.GITHUB_CLIENT_SECRET = env.GITHUB_CLIENT_SECRET ?? "";
     process.env.API_BASE_URL = env.API_BASE_URL ?? "";
     process.env.DASHBOARD_URL = env.DASHBOARD_URL ?? "";
+    process.env.WEBHOOK_SECRET = env.WEBHOOK_SECRET ?? "";
   }
 
   // CORS

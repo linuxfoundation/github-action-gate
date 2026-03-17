@@ -860,18 +860,44 @@ export function createApiRouter(): Router {
 
 // ── OAuth ──────────────────────────────────────────────────────────────────────
 
-// Short-lived CSRF nonces for the OAuth code exchange.  state → expiry timestamp.
-const oauthStates = new Map<string, number>();
+// HMAC-signed, stateless OAuth CSRF tokens.
+// Format: "timestamp.nonce.hmac" — no server-side storage needed,
+// so this works correctly across Cloudflare Worker isolates.
 const STATE_TTL_MS = 10 * 60 * 1_000;
 
-/** Prune expired OAuth nonces.  Called lazily instead of via setInterval
- *  so that the module can be imported inside Cloudflare Workers (which
- *  forbid timers in global scope). */
-function pruneOauthStates(): void {
-  const now = Date.now();
-  for (const [key, exp] of oauthStates) {
-    if (exp < now) oauthStates.delete(key);
+/** Create an HMAC-signed OAuth state token: "timestamp.nonce.signature" */
+function createOAuthState(secret: string): string {
+  const timestamp = Date.now().toString(36);
+  const nonce = crypto.randomBytes(16).toString("hex");
+  const payload = `${timestamp}.${nonce}`;
+  const signature = crypto
+    .createHmac("sha256", secret)
+    .update(payload)
+    .digest("hex");
+  return `${payload}.${signature}`;
+}
+
+/** Verify an HMAC-signed OAuth state token.  Returns true if valid and not expired. */
+function verifyOAuthState(state: string, secret: string): boolean {
+  const parts = state.split(".");
+  if (parts.length !== 3) return false;
+  const [timestamp, nonce, signature] = parts;
+  // Verify HMAC
+  const payload = `${timestamp}.${nonce}`;
+  const expected = crypto
+    .createHmac("sha256", secret)
+    .update(payload)
+    .digest("hex");
+  if (expected.length !== signature.length) return false;
+  let mismatch = 0;
+  for (let i = 0; i < expected.length; i++) {
+    mismatch |= expected.charCodeAt(i) ^ signature.charCodeAt(i);
   }
+  if (mismatch !== 0) return false;
+  // Verify not expired
+  const created = parseInt(timestamp, 36);
+  if (isNaN(created)) return false;
+  return Date.now() - created < STATE_TTL_MS;
 }
 
 function escText(s: string): string {
@@ -897,6 +923,7 @@ export function createAuthRouter(): Router {
   /** GET /auth/github — redirect to GitHub's authorization page */
   router.get("/github", (_req: Request, res: Response) => {
     const clientId = process.env.GITHUB_CLIENT_ID;
+    const stateSecret = process.env.WEBHOOK_SECRET;
     if (!clientId) {
       res
         .type("text")
@@ -904,10 +931,15 @@ export function createAuthRouter(): Router {
         .send("GitHub OAuth is not configured (GITHUB_CLIENT_ID missing).");
       return;
     }
+    if (!stateSecret) {
+      res
+        .type("text")
+        .status(503)
+        .send("GitHub OAuth is not configured (WEBHOOK_SECRET missing).");
+      return;
+    }
 
-    const state = crypto.randomBytes(16).toString("hex");
-    pruneOauthStates();
-    oauthStates.set(state, Date.now() + STATE_TTL_MS);
+    const state = createOAuthState(stateSecret);
 
     const params = new URLSearchParams({
       client_id: clientId,
@@ -933,15 +965,14 @@ export function createAuthRouter(): Router {
       return;
     }
 
-    const expiry = oauthStates.get(state);
-    if (!expiry || expiry < Date.now()) {
+    const stateSecret = process.env.WEBHOOK_SECRET;
+    if (!stateSecret || !verifyOAuthState(state, stateSecret)) {
       res
         .type("text")
         .status(400)
         .send("OAuth state is invalid or expired — please try logging in again.");
       return;
     }
-    oauthStates.delete(state);
 
     const clientId = process.env.GITHUB_CLIENT_ID;
     const clientSecret = process.env.GITHUB_CLIENT_SECRET;
