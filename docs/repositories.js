@@ -144,7 +144,7 @@ $("btn-next").addEventListener("click", () => {
   if (state.page < state.totalPages) { state.page++; loadRepos(); }
 });
 $("btn-login").addEventListener("click", () => {
-  window.location.href = `${API_BASE}/api/login`;
+  window.location.href = `${API_BASE}/auth/github`;
 });
 $("btn-logout").addEventListener("click", () => {
   clearAuthToken();
