@@ -93,7 +93,9 @@ The deploy step in CI stamps the git SHA into the dashboard footer via
 | `src/services/gate.ts` | Gate evaluation logic + check run output |
 | `src/handlers/` | Webhook handlers (PR, workflow-run, workflow-job) |
 | `docs/` | Static dashboard (deployed to Cloudflare Pages) |
+| `docs/config.js` | Dashboard API URL configuration (loaded by all pages) |
 | `docs/my-attestations.html` | Per-user attestation view + revoke UI |
+| `docs/repositories.html` | Paginated repository list page |
 | `scripts/patch-prisma-for-workers.sh` | Post-generate Prisma patch for Workers WASM |
 | `.github/workflows/ci.yml` | Lint + Test + Deploy pipeline |
 
@@ -104,6 +106,11 @@ The deploy step in CI stamps the git SHA into the dashboard footer via
 - Wrangler reads from `dist-worker/`, not `src/`. Always `npm run build`
   after source changes before manual deploys.
 - The `__GIT_SHA__` and `__GITHUB_REPO__` placeholders in dashboard files
-  (`docs/index.html`, `docs/my-attestations.html`, `docs/app.js`,
-  `docs/my-attestations.js`) are replaced by CI at deploy time —
-  don't change them to real values in source.
+  (`docs/index.html`, `docs/my-attestations.html`, `docs/repositories.html`,
+  `docs/app.js`, `docs/my-attestations.js`, `docs/repositories.js`) are
+  replaced by CI at deploy time — don’t change them to real values in source.
+- CORS no longer defaults to `*`. It falls back to `DASHBOARD_URL`; if
+  neither `CORS_ORIGINS` nor `DASHBOARD_URL` is set, all cross-origin
+  requests are rejected.
+- `express-rate-limit` is NOT used in the Worker entry (ineffective on
+  Workers). Use Cloudflare WAF rate limiting rules instead.

@@ -89,7 +89,7 @@ Required env vars:
 | `GITHUB_CLIENT_SECRET` | OAuth App client secret |
 | `API_BASE_URL` | Public URL of this server (e.g. `https://action-gate.example.com`) |
 | `DASHBOARD_URL` | Public URL of the dashboard |
-| `CORS_ORIGINS` | Comma-separated allowed origins (defaults to `*`) |
+| `CORS_ORIGINS` | Comma-separated allowed origins (falls back to `DASHBOARD_URL`; rejects all if neither is set) |
 
 ### 4. Run locally
 
@@ -279,12 +279,16 @@ curl -X PUT https://your-server.example.com/api/v1/repositories/owner/repo/confi
 ## Dashboard
 
 The `docs/` directory is a self-contained static site deployed to Cloudflare Pages.
-Set `window.ACTION_GATE_API_URL` in `docs/index.html` to your API base URL.
+Set `window.ACTION_GATE_API_URL` in `docs/config.js` to your API base URL.
 
 Users can log in with their GitHub account via the **Login with GitHub** button
 to create attestations directly from the UI, including batch vouching from
 the recent workflow runs table.
 
+- **Repositories** (`repositories.html`) — a paginated list of all
+  repositories tracked by Action Gate, showing gate mode, active
+  attestation counts, and expiry settings. Linked from the dashboard
+  stat card.
 - **Revoke** — each active attestation in the table has a Revoke button
   (visible when logged in). The server enforces that only the original
   voucher or a repository admin can revoke.
@@ -319,7 +323,7 @@ pre-commit install       # one-time setup
 ```
 
 Hooks include: trailing-whitespace, end-of-file-fixer, YAML/JSON validation,
-ESLint, markdownlint, ShellCheck, and actionlint. To run all hooks manually:
+ESLint, markdownlint, ShellCheck, REUSE/SPDX compliance, and actionlint. To run all hooks manually:
 
 ```bash
 pre-commit run --all-files
