@@ -848,6 +848,7 @@ export function createApiRouter(): Router {
         take: limit,
         orderBy: { createdAt: "desc" },
         where: Object.keys(repoFilter).length ? { repository: repoFilter } : undefined,
+        distinct: ["repositoryId", "workflowPath"],
         include: {
           repository: { select: { owner: true, name: true } },
         },
