@@ -71,6 +71,19 @@ export async function handleWorkflowRun(context: Context<"workflow_run.requested
     },
   });
 
+  // In BLOCK mode, cancel the workflow run to prevent jobs from executing.
+  if (summary.overallStatus === "fail") {
+    try {
+      await context.octokit.rest.actions.cancelWorkflowRun({
+        owner,
+        repo,
+        run_id: run.id,
+      });
+    } catch (err) {
+      context.log.warn({ err }, "Failed to cancel workflow run");
+    }
+  }
+
   // ── Persist run record ────────────────────────────────────────────────────
   await prisma.workflowRun
     .upsert({

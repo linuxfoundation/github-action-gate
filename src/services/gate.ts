@@ -5,6 +5,12 @@
 import { GateMode } from "../types/index.js";
 import { checkAttestationStatus, getRepository } from "./attestation.js";
 import { AttestationTier, CheckOutput, GateCheckResult, GateSummary, WorkflowRef } from "../types/index.js";
+import { createInstallationOctokit } from "../api/octokit.js";
+import { parseWorkflowJobs } from "./workflow-parser.js";
+import { prisma } from "../db/client.js";
+import { logger } from "../logger.js";
+
+const CHECK_NAME = "Action Gate / Workflow";
 
 // ─── Core gate logic ─────────────────────────────────────────────────────────
 
@@ -242,4 +248,83 @@ export function buildCheckOutput(summary: GateSummary): CheckOutput {
   }
 
   return { conclusion, title, summary: lines.join("\n") };
+}
+
+// ─── Re-evaluation on attestation revoke ──────────────────────────────────────
+
+/**
+ * Re-evaluate the gate for recent workflow runs when an attestation is revoked.
+ * Updates the check run and cancels the workflow if in BLOCK mode.
+ */
+export async function reEvaluateActiveRuns(
+  repositoryId: string,
+  owner: string,
+  repo: string,
+  workflowPath: string,
+  installationId: number,
+): Promise<void> {
+  // Find runs from the last 6 hours that may still be in progress.
+  const cutoff = new Date(Date.now() - 6 * 60 * 60 * 1000);
+  const runs = await prisma.workflowRun.findMany({
+    where: {
+      repositoryId,
+      workflowPath,
+      createdAt: { gte: cutoff },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  if (runs.length === 0) return;
+
+  const octokit = createInstallationOctokit(installationId);
+
+  for (const run of runs) {
+    let jobs: string[] = [];
+    try {
+      const { data: content } = await octokit.repos.getContent({
+        owner,
+        repo,
+        path: workflowPath,
+        ref: run.headSha,
+      });
+      if ("content" in content && typeof content.content === "string") {
+        const decoded = Buffer.from(content.content, "base64").toString("utf-8");
+        jobs = parseWorkflowJobs(decoded).jobs;
+      }
+    } catch {
+      // Proceed with empty job list — checks at workflow level only.
+    }
+
+    const summary = await checkGate(owner, repo, [{ path: workflowPath, jobs }]);
+    const output = buildCheckOutput(summary);
+
+    await octokit.checks.create({
+      owner,
+      repo,
+      name: CHECK_NAME,
+      head_sha: run.headSha,
+      status: "completed",
+      started_at: new Date().toISOString(),
+      completed_at: new Date().toISOString(),
+      conclusion: output.conclusion,
+      output: {
+        title: output.title,
+        summary: output.summary,
+      },
+    });
+
+    // In BLOCK mode, cancel the workflow run so jobs stop.
+    if (summary.overallStatus === "fail") {
+      try {
+        await octokit.actions.cancelWorkflowRun({
+          owner,
+          repo,
+          run_id: parseInt(run.runId, 10),
+        });
+        logger.info({ runId: run.runId, owner, repo }, "Cancelled workflow run after attestation revoke");
+      } catch {
+        // Run may have already completed — ignore.
+      }
+    }
+  }
 }

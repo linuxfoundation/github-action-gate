@@ -26,11 +26,13 @@ const MockOctokit = jest.fn().mockImplementation(() => ({
 
 jest.mock("@octokit/rest", () => ({ Octokit: MockOctokit }));
 jest.mock("@octokit/plugin-retry", () => ({ retry: jest.fn() }));
+jest.mock("@octokit/auth-app", () => ({ createAppAuth: jest.fn() }));
 
 import { createApiRouter } from "../../api/routes";
 
 // ── Mock service layer ─────────────────────────────────────────────────────────
 jest.mock("../../services/attestation");
+jest.mock("../../services/gate");
 jest.mock("../../api/middleware");
 
 // ── Mock Prisma ────────────────────────────────────────────────────────────────

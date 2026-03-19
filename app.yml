@@ -31,8 +31,8 @@ default_permissions:
   metadata: read
   # List files changed in a pull request
   pull_requests: read
-  # Read workflow runs and jobs (runtime gate)
-  actions: read
+  # Read and cancel workflow runs/jobs (runtime gate + block mode)
+  actions: write
 
 # Webhook events the app subscribes to
 default_events:

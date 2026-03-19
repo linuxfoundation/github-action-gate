@@ -12,6 +12,15 @@ jest.mock("../../services/attestation");
 // attestation → db/client import chain.
 jest.mock("../../db/client", () => ({ prisma: {} }));
 
+// Prevent ESM-only octokit modules from being loaded in tests.
+jest.mock("../../api/octokit", () => ({
+  createInstallationOctokit: jest.fn(),
+}));
+
+jest.mock("../../services/workflow-parser", () => ({
+  parseWorkflowJobs: jest.fn(() => ({ jobs: [] })),
+}));
+
 import { getRepository, checkAttestationStatus } from "../../services/attestation";
 
 const mockGetRepository = getRepository as jest.MockedFunction<typeof getRepository>;

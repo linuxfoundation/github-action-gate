@@ -14,6 +14,7 @@ import {
   updateRepositoryConfig,
 } from "../services/attestation.js";
 import { authenticateUser, AuthRequest } from "./middleware.js";
+import { reEvaluateActiveRuns } from "../services/gate.js";
 import { prisma } from "../db/client.js";
 import { logger } from "../logger.js";
 
@@ -641,6 +642,19 @@ export function createApiRouter(): Router {
             workflowPath: attestation.workflowPath,
           },
           req.ip
+        );
+
+        // Re-evaluate the gate for any in-progress workflow runs so that
+        // revoking an attestation immediately updates check results and
+        // cancels running workflows in BLOCK mode.
+        reEvaluateActiveRuns(
+          attestation.repositoryId,
+          attestation.repository.owner,
+          attestation.repository.name,
+          attestation.workflowPath,
+          attestation.repository.installationId,
+        ).catch((err) =>
+          logger.error({ err }, "Failed to re-evaluate active runs after revoke")
         );
 
         res.json(revoked);

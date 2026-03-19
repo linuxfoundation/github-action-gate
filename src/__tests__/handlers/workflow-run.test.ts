@@ -5,6 +5,14 @@
 import { handleWorkflowRun } from "../../handlers/workflow-run";
 
 // ── Mock dependencies ──────────────────────────────────────────────────────────
+// Prevent ESM-only octokit modules from being loaded when gate.ts is resolved.
+jest.mock("@octokit/rest", () => {
+  const MockOctokit = jest.fn();
+  (MockOctokit as any).plugin = jest.fn().mockReturnValue(MockOctokit);
+  return { Octokit: MockOctokit };
+});
+jest.mock("@octokit/plugin-retry", () => ({ retry: jest.fn() }));
+jest.mock("@octokit/auth-app", () => ({ createAppAuth: jest.fn() }));
 jest.mock("../../services/gate");
 jest.mock("../../services/attestation");
 jest.mock("../../services/workflow-parser");
@@ -74,6 +82,7 @@ function makeContext(overrides: Record<string, unknown> = {}) {
       type: "file",
     },
   });
+  const cancelWorkflowRun = jest.fn().mockResolvedValue({});
 
   return {
     repo: () => ({ owner: "acme", repo: "app" }),
@@ -96,6 +105,7 @@ function makeContext(overrides: Record<string, unknown> = {}) {
       rest: {
         repos: { getContent: reposGetContent },
         checks: { create: checksCreate },
+        actions: { cancelWorkflowRun },
       },
     },
     log: {
@@ -231,5 +241,56 @@ describe("handleWorkflowRun", () => {
     await handleWorkflowRun(ctx);
 
     expect(mockPrisma.workflowRun.deleteMany).not.toHaveBeenCalled();
+  });
+
+  it("cancels the workflow run when gate fails in BLOCK mode", async () => {
+    mockCheckGate.mockResolvedValue({
+      owner: "acme",
+      repo: "app",
+      mode: "BLOCK" as any,
+      checks: [],
+      overallStatus: "fail" as const,
+    } as any);
+    mockBuildCheckOutput.mockReturnValue({
+      conclusion: "failure" as const,
+      title: "🚫 Blocked",
+      summary: "Missing attestation",
+    });
+
+    const ctx = makeContext();
+    await handleWorkflowRun(ctx);
+
+    expect(ctx.octokit.rest.actions.cancelWorkflowRun).toHaveBeenCalledWith({
+      owner: "acme",
+      repo: "app",
+      run_id: 123,
+    });
+  });
+
+  it("does not cancel the workflow run when gate passes", async () => {
+    const ctx = makeContext();
+    await handleWorkflowRun(ctx);
+
+    expect(ctx.octokit.rest.actions.cancelWorkflowRun).not.toHaveBeenCalled();
+  });
+
+  it("does not cancel the workflow run in audit mode (warn)", async () => {
+    mockCheckGate.mockResolvedValue({
+      owner: "acme",
+      repo: "app",
+      mode: "AUDIT" as any,
+      checks: [],
+      overallStatus: "warn" as const,
+    } as any);
+    mockBuildCheckOutput.mockReturnValue({
+      conclusion: "neutral" as const,
+      title: "⚠️ Audit warning",
+      summary: "Missing attestation (audit mode)",
+    });
+
+    const ctx = makeContext();
+    await handleWorkflowRun(ctx);
+
+    expect(ctx.octokit.rest.actions.cancelWorkflowRun).not.toHaveBeenCalled();
   });
 });

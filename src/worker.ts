@@ -171,6 +171,8 @@ function buildExpressApp(env: Env): express.Express {
 
   // Expose env vars so existing code that reads process.env works.
   if (typeof process !== "undefined" && process.env) {
+    process.env.APP_ID = env.APP_ID ?? "";
+    process.env.PRIVATE_KEY = ensurePkcs8((env.PRIVATE_KEY ?? "").replace(/\\n/g, "\n"));
     process.env.GITHUB_CLIENT_ID = env.GITHUB_CLIENT_ID ?? "";
     process.env.GITHUB_CLIENT_SECRET = env.GITHUB_CLIENT_SECRET ?? "";
     process.env.API_BASE_URL = env.API_BASE_URL ?? "";
