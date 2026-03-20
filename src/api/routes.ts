@@ -196,6 +196,10 @@ export function createApiRouter(): Router {
         }
 
         // Enforce length limits on free-text fields to prevent abuse.
+        if (typeof job_name === "string" && job_name.length > 200) {
+          res.status(400).json({ error: "job_name must not exceed 200 characters" });
+          return;
+        }
         if (typeof notes === "string" && notes.length > 1_000) {
           res.status(400).json({ error: "notes must not exceed 1,000 characters" });
           return;
@@ -402,6 +406,14 @@ export function createApiRouter(): Router {
             });
             continue;
           }
+          if (typeof job_name === "string" && job_name.length > 200) {
+            results.push({
+              index: i,
+              status: "error",
+              reason: "job_name must not exceed 200 characters",
+            });
+            continue;
+          }
           if (typeof notes === "string" && notes.length > 1_000) {
             results.push({
               index: i,
@@ -568,10 +580,16 @@ export function createApiRouter(): Router {
         const httpStatus = created > 0 && skipped === 0 && errors === 0 ? 201 : 207;
 
         if (created > 0) {
+          const createdDetails = results
+            .filter((r): r is BatchResult & { status: "created"; attestation: { id: string } } => r.status === "created")
+            .map((r) => ({
+              id: (r.attestation as { id: string }).id,
+              target: `${(items[r.index] as Record<string, unknown>).repository}/${(items[r.index] as Record<string, unknown>).workflow_path}`,
+            }));
           audit(
             "attestation.batch_create",
             { login: req.user!.login, id: req.user!.id },
-            { created, skipped, errors, totalItems: items.length },
+            { created, skipped, errors, totalItems: items.length, createdDetails },
             req.ip
           );
         }

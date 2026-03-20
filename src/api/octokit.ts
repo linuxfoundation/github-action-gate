@@ -15,16 +15,23 @@ import { createAppAuth } from "@octokit/auth-app";
  */
 export const RetryOctokit: typeof Octokit = Octokit.plugin(retry) as typeof Octokit;
 
-/**
- * Create an Octokit instance authenticated as a GitHub App installation.
- * Requires APP_ID and PRIVATE_KEY to be set in process.env.
- */
+// Module-scoped credentials — set once at startup via setAppCredentials().
+let _appId = "";
+let _privateKey = "";
+
+/** Store GitHub App credentials in module scope (avoids leaking to process.env). */
+export function setAppCredentials(appId: string, privateKey: string): void {
+  _appId = appId;
+  _privateKey = privateKey;
+}
+
+/** Create an Octokit instance authenticated as a GitHub App installation. */
 export function createInstallationOctokit(installationId: number): InstanceType<typeof Octokit> {
   return new RetryOctokit({
     authStrategy: createAppAuth,
     auth: {
-      appId: process.env.APP_ID ?? "",
-      privateKey: process.env.PRIVATE_KEY ?? "",
+      appId: _appId,
+      privateKey: _privateKey,
       installationId,
     },
   });

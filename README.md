@@ -180,7 +180,7 @@ Changes  ──┘
 ```
 
 - **Lint**: ESLint, actionlint, ShellCheck
-- **Test**: TypeScript type-check, Jest (68 tests)
+- **Test**: TypeScript type-check, Jest (71 tests)
 - **Changes**: Detects if any deployable paths were modified (`src/`, `docs/`, `prisma/`, `scripts/`, `package*`, `tsconfig*`, `wrangler.toml`)
 - **Deploy**: Runs only on `main` when both lint and test pass *and* deployable files changed. Manual `workflow_dispatch` always deploys.
 
@@ -194,6 +194,7 @@ In your [GitHub App settings](https://github.com/settings/apps):
 
 **Permissions (Repository)**
 
+- `Actions` — Read & Write
 - `Checks` — Read & Write
 - `Contents` — Read-only
 - `Pull requests` — Read-only

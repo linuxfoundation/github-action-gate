@@ -54,7 +54,8 @@ export default function actionGate(bot: Probot, { getRouter }: AppOptions) {
     res.setHeader(
       "Content-Security-Policy",
       "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; " +
-        "img-src 'self' https://avatars.githubusercontent.com data:; connect-src 'self' https:; " +
+        "img-src 'self' https://avatars.githubusercontent.com data:; " +
+        "connect-src 'self' https://github-action-gate.pytorch-foundation.workers.dev https://api.github.com https://github.com; " +
         "font-src 'self'; frame-ancestors 'none'; form-action 'self'"
     );
     res.setHeader("Permissions-Policy", "geolocation=(), camera=(), microphone=()");

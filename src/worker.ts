@@ -17,6 +17,7 @@
 
 import { createD1Client, setPrisma } from "./db/client.js";
 import { createApiRouter, createAuthRouter } from "./api/routes.js";
+import { setAppCredentials } from "./api/octokit.js";
 import { handlePullRequest } from "./handlers/pull-request.js";
 import { handleWorkflowRun } from "./handlers/workflow-run.js";
 import { handleWorkflowJob } from "./handlers/workflow-job.js";
@@ -169,10 +170,11 @@ function buildContext(event: string, payload: Record<string, unknown>, env: Env)
 function buildExpressApp(env: Env): express.Express {
   const app = express();
 
-  // Expose env vars so existing code that reads process.env works.
+  // Store app credentials in module scope (not process.env) to limit exposure.
+  setAppCredentials(env.APP_ID ?? "", ensurePkcs8((env.PRIVATE_KEY ?? "").replace(/\\n/g, "\n")));
+
+  // Expose non-secret env vars so existing code that reads process.env works.
   if (typeof process !== "undefined" && process.env) {
-    process.env.APP_ID = env.APP_ID ?? "";
-    process.env.PRIVATE_KEY = ensurePkcs8((env.PRIVATE_KEY ?? "").replace(/\\n/g, "\n"));
     process.env.GITHUB_CLIENT_ID = env.GITHUB_CLIENT_ID ?? "";
     process.env.GITHUB_CLIENT_SECRET = env.GITHUB_CLIENT_SECRET ?? "";
     process.env.API_BASE_URL = env.API_BASE_URL ?? "";
@@ -212,7 +214,8 @@ function buildExpressApp(env: Env): express.Express {
     res.setHeader(
       "Content-Security-Policy",
       "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; " +
-        "img-src 'self' https://avatars.githubusercontent.com data:; connect-src 'self' https:; " +
+        "img-src 'self' https://avatars.githubusercontent.com data:; " +
+        "connect-src 'self' https://github-action-gate.pytorch-foundation.workers.dev https://api.github.com https://github.com; " +
         "font-src 'self'; frame-ancestors 'none'; form-action 'self'"
     );
     res.setHeader("Permissions-Policy", "geolocation=(), camera=(), microphone=()");

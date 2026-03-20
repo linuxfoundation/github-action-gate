@@ -10,4 +10,4 @@
   Permissions-Policy: geolocation=(), camera=(), microphone=()
   # connect-src allows the configured API worker domain (https:) plus GitHub
   # API for auth/org lookups.
-  Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https://avatars.githubusercontent.com data:; connect-src 'self' https:; font-src 'self'; frame-ancestors 'none'; form-action 'self'
+  Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https://avatars.githubusercontent.com data:; connect-src 'self' https://github-action-gate.pytorch-foundation.workers.dev https://api.github.com https://github.com; font-src 'self'; frame-ancestors 'none'; form-action 'self'
